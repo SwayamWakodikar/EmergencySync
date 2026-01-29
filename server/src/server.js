@@ -7,7 +7,7 @@ const port = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 app.get("/", (req, res) => {
-  console.log("got poked");
+  res.send("Server is running successfully");
 });
 
 app.listen(port, () => {
