@@ -2,12 +2,9 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import 'dotenv/config'
-import { PrismaClient } from '@prisma/client'
-import { withAccelerate } from '@prisma/extension-accelerate'
 dotenv.config();
-const prisma = new PrismaClient({
-  accelerateUrl: process.env.DATABASE_URL,
-}).$extends(withAccelerate())
+import prisma from "./prisma.js"
+import { moveAmbulance } from "./controller/movement.controller.js";
 const app = express();
 const port = process.env.PORT;
 app.use(cors());
@@ -15,7 +12,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Server is running successfully");
 });
-
+//dynamically updating data
+setInterval(moveAmbulance,1000);
 app.listen(port, () => {
   console.log(`Server Running at port ${port}`);
 });
