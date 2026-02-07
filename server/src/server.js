@@ -10,10 +10,16 @@ const app = express();
 const port = process.env.PORT;
 app.use(cors());
 app.use(express.json());
-app.post('/emergency',emergencyGenerator)
+
+
 app.get("/", (req, res) => {
   res.send("Server is running successfully");
 });
+app.get("/emergency", (req, res) => {
+  res.send("Posted");
+});
+//posting emergency
+app.post('/emergency',emergencyGenerator)
 //dynamically updating data
 setInterval(moveAmbulance,1000);
 app.listen(port, () => {
