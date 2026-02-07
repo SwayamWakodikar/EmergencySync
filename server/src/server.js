@@ -4,11 +4,13 @@ import dotenv from "dotenv";
 import 'dotenv/config'
 dotenv.config();
 import prisma from "./prisma.js"
+import { emergencyGenerator } from "./controller/emergency.controller.js";
 import { moveAmbulance } from "./controller/movement.controller.js";
 const app = express();
 const port = process.env.PORT;
 app.use(cors());
 app.use(express.json());
+app.post('/emergency',emergencyGenerator)
 app.get("/", (req, res) => {
   res.send("Server is running successfully");
 });
