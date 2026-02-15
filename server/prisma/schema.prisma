@@ -31,7 +31,7 @@ model Emergencyu{
 }
 model Assignment {
   id Int @id @default(autoincrement())
-  ambulanceId String
-  emergencyId String
+  ambulanceId Int
+  emergencyId Int
   assignedAt DateTime @default(now())
 }

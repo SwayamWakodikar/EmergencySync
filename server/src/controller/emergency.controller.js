@@ -1,5 +1,5 @@
 import prisma from "../prisma.js"
-
+import { assignment } from "./assignment.controller.js"
 const LAT_MIN = 18.45
 const LAT_MAX = 18.65
 const LNG_MIN = 73.75
@@ -14,13 +14,16 @@ export async function emergencyGenerator(req, res) {
     const severity = String(Math.floor(Math.random() * 5) + 1)
 
     const emergency = await prisma.emergencyu.create({
+      
       data: {
         lat: randomBetween(LAT_MIN, LAT_MAX),
         lng: randomBetween(LNG_MIN, LNG_MAX),
         severity,
         status: 'WAITING',
       },
+      
     })
+    await assignment(emergency.id),
 
     console.log("Emergency Created", emergency.id)
   } catch (err) {

@@ -1,15 +1,11 @@
-// prisma.js
-import dotenv from 'dotenv'
-dotenv.config()
-import { PrismaClient } from '@prisma/client'
+// if src/prisma.js is inside src/
+import pkg from './generated/prisma/index.js'
+const { PrismaClient } = pkg
 import { withAccelerate } from '@prisma/extension-accelerate'
-
-// if (!process.env.DATABASE_URL) {
-//   throw new Error('DATABASE_URL is not set')
-// }
+import DB_KEY from '../env.js'
 
 const prisma = new PrismaClient({
-  accelerateUrl: process.env.DATABASE_URL,
+  accelerateUrl: DB_KEY,
 }).$extends(withAccelerate())
 
 export default prisma
