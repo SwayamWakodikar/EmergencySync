@@ -1,5 +1,5 @@
 import prisma from '../prisma.js'
-
+import { completion } from '../services/completion.controller.js'
 // simple distance calculation (good enough for city scale)
 function distance(a, b) {
   const dx = a.lat - b.lat
@@ -12,7 +12,7 @@ export async function assignment(emergencyId) {
     const emergency = await tx.emergencyu.findUnique({
       where: { id: emergencyId },
     })
-    console.log("⚙️ assignEmergency called with ID:", emergencyId)
+    console.log(" assignEmergency called with ID:", emergencyId)
 
 
     if (!emergency || emergency.status !== 'WAITING') {
@@ -54,11 +54,12 @@ export async function assignment(emergencyId) {
         emergencyId: emergency.id,
       },
     })
+    completion(nearest.id,emergency.id);
 
     console.log(
       `🚑 Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
     )
 
-    return assignment
+    return assignment;
   })
 }
