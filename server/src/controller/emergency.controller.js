@@ -1,4 +1,5 @@
-import prisma from "../prisma.js"
+// import prisma from "../prisma.js"
+import pool from '../config/db.js';
 import { assignment } from "./assignment.controller.js"
 const LAT_MIN = 18.45
 const LAT_MAX = 18.65
@@ -11,21 +12,23 @@ function randomBetween(min, max) {
 
 export async function emergencyGenerator(req, res) {
   try {
-    const severity = String(Math.floor(Math.random() * 5) + 1)
+    const severity = Math.floor(Math.random() * 5) + 1
 
+    /*
     const emergency = await prisma.emergencyu.create({
-      
-      data: {
-        lat: randomBetween(LAT_MIN, LAT_MAX),
-        lng: randomBetween(LNG_MIN, LNG_MAX),
-        severity,
-        status: 'WAITING',
-      },
-      
+      data: { lat: randomBetween(LAT_MIN, LAT_MAX), lng: randomBetween(LNG_MIN, LNG_MAX), severity, status: 'WAITING' },
     })
-    await assignment(emergency.id),
+    */
+    const { rows } = await pool.query(
+      `INSERT INTO emergencies (latitude, longitude, severity, status, created_at) 
+       VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
+      [randomBetween(LAT_MIN, LAT_MAX), randomBetween(LNG_MIN, LNG_MAX), severity, 'WAITING']
+    );
+    const emergencyId = rows[0].id;
 
-    console.log("Emergency Created", emergency.id)
+    await assignment(emergencyId),
+
+    console.log("Emergency Created", emergencyId)
   } catch (err) {
     console.error(err) 
   }

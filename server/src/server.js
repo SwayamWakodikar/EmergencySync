@@ -3,7 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import 'dotenv/config'
 dotenv.config();
-import prisma from "./prisma.js"
+// import prisma from "./prisma.js"
+import './config/db.js';
 import { emergencyGenerator } from "./controller/emergency.controller.js";
 import { moveAmbulance } from "./controller/movement.controller.js";
 const app = express();

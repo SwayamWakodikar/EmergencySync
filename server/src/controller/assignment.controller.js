@@ -1,4 +1,5 @@
-import prisma from '../prisma.js'
+// import prisma from '../prisma.js'
+import pool from '../config/db.js';
 import { completion } from '../services/completion.controller.js'
 // simple distance calculation (good enough for city scale)
 function distance(a, b) {
@@ -8,22 +9,30 @@ function distance(a, b) {
 }
 
 export async function assignment(emergencyId) {
-  return prisma.$transaction(async (tx) => {
-    const emergency = await tx.emergencyu.findUnique({
-      where: { id: emergencyId },
-    })
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    /*
+    const emergency = await tx.emergencyu.findUnique({ where: { id: emergencyId } })
+    */
+    const { rows: emergencies } = await client.query('SELECT id, latitude as lat, longitude as lng, status FROM emergencies WHERE id = $1', [emergencyId]);
+    const emergency = emergencies[0];
+
     console.log(" assignEmergency called with ID:", emergencyId)
 
-
     if (!emergency || emergency.status !== 'WAITING') {
+      await client.query('ROLLBACK');
       return null
     }
 
-    const ambulances = await tx.ambulance.findMany({
-      where: { status: 'FREE' },
-    })
+    /*
+    const ambulances = await tx.ambulance.findMany({ where: { status: 'FREE' } })
+    */
+    const { rows: ambulances } = await client.query("SELECT id, latitude as lat, longitude as lng, status FROM ambulances WHERE status = 'FREE'");
 
     if (ambulances.length === 0) {
+      await client.query('ROLLBACK');
       return null
     }
 
@@ -38,28 +47,46 @@ export async function assignment(emergencyId) {
       }
     }
 
-    await tx.ambulance.update({
-      where: { id: nearest.id },
-      data: { status: 'ASSIGNED' },
-    })
+    /*
+    await tx.ambulance.update({ where: { id: nearest.id }, data: { status: 'ASSIGNED' } })
+    */
+    await client.query(
+      'UPDATE ambulances SET status = $1 WHERE id = $2',
+      ['ASSIGNED', nearest.id]
+    );
 
-    await tx.emergencyu.update({
-      where: { id: emergency.id },
-      data: { status: 'ASSIGNED' },
-    })
+    /*
+    await tx.emergencyu.update({ where: { id: emergency.id }, data: { status: 'ASSIGNED' } })
+    */
+    await client.query(
+      'UPDATE emergencies SET status = $1 WHERE id = $2',
+      ['ASSIGNED', emergency.id]
+    );
 
-    const assignment = await tx.assignment.create({
-      data: {
-        ambulanceId: nearest.id,
-        emergencyId: emergency.id,
-      },
-    })
-    completion(nearest.id,emergency.id,minDist);
+    /*
+    const assignment = await tx.assignment.create({ data: { ambulanceId: nearest.id, emergencyId: emergency.id } })
+    */
+    const { rows: assignmentRows } = await client.query(
+      `INSERT INTO assignments (ambulance_id, emergency_id, assigned_at)
+       VALUES ($1, $2, NOW()) RETURNING *`,
+      [nearest.id, emergency.id]
+    );
+    const assignment = assignmentRows[0];
+
+    await client.query('COMMIT');
+
+    completion(nearest.id, emergency.id, minDist);
 
     console.log(
       `🚑 Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
     )
 
     return assignment;
-  })
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    throw err;
+  } finally {
+    client.release();
+  }
 }

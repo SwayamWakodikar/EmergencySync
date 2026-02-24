@@ -1,13 +1,47 @@
-import 'dotenv/config'
-import pkg from 'pg'
-const { Pool } = pkg
+import pg from 'pg';
+const { Pool } = pg;
+import dotenv from 'dotenv';
+dotenv.config();
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-})
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'postgres',
+});
 
-export default pool
+// Automatically create the required tables if they don't exist
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ambulances (
+        id SERIAL PRIMARY KEY,
+        latitude FLOAT NOT NULL,
+        longitude FLOAT NOT NULL,
+        status VARCHAR(20) DEFAULT 'FREE'
+      );
+      CREATE TABLE IF NOT EXISTS emergencies (
+        id SERIAL PRIMARY KEY,
+        latitude FLOAT NOT NULL,
+        longitude FLOAT NOT NULL,
+        severity INT,
+        status VARCHAR(20) DEFAULT 'WAITING',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS assignments (
+        id SERIAL PRIMARY KEY,
+        ambulance_id INT REFERENCES ambulances(id),
+        emergency_id INT REFERENCES emergencies(id),
+        assigned_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log('Database tables initialized locally.');
+  } catch (err) {
+    console.error('Failed to initialize database tables:', err);
+  }
+}
+
+await initDB();
+
+export default pool;
