@@ -4,8 +4,7 @@ const { PrismaClient } = pkg
 import { withAccelerate } from '@prisma/extension-accelerate'
 import DB_KEY from '../env.js'
 
-const prisma = new PrismaClient({
-  accelerateUrl: DB_KEY,
-}).$extends(withAccelerate())
+// Prisma will read the DB URL from your environment (e.g. process.env.DATABASE_URL)
+const prisma = new PrismaClient()
 
 export default prisma

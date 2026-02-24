@@ -1,7 +1,8 @@
 import prisma from "../prisma.js";
 import { assignment } from "../controller/assignment.controller.js";
 
-export async function completion(ambulanceId,emergencyId) {
+export async function completion(ambulanceId,emergencyId,distance) {
+    const traveltime=Math.max(3000,distance*5000)
     setTimeout(async ()=>{
         console.log(`Resolving the emergency ${emergencyId}`);
 
@@ -22,5 +23,5 @@ export async function completion(ambulanceId,emergencyId) {
         if(newEmergency){
             await assignment(newEmergency.id);
         }
-    },10000)
+    },traveltime)
 }

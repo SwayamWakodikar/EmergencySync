@@ -54,7 +54,7 @@ export async function assignment(emergencyId) {
         emergencyId: emergency.id,
       },
     })
-    completion(nearest.id,emergency.id);
+    completion(nearest.id,emergency.id,minDist);
 
     console.log(
       `🚑 Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
