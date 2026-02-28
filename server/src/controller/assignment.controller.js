@@ -1,6 +1,7 @@
 // import prisma from '../prisma.js'
 import pool from '../config/db.js';
-import { completion } from '../services/completion.controller.js'
+import { completion } from '../services/completion.services.js'
+import { assignNextEmergency } from '../services/dispatch.services.js';
 // simple distance calculation (good enough for city scale)
 function distance(a, b) {
   const dx = a.lat - b.lat
@@ -78,9 +79,9 @@ export async function assignment(emergencyId) {
     completion(nearest.id, emergency.id, minDist);
 
     console.log(
-      `🚑 Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
+      ` Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
     )
-
+    // await assignNextEmergency();
     return assignment;
   } catch (err) {
     await client.query('ROLLBACK');
