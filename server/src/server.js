@@ -8,7 +8,7 @@ import './config/db.js';
 import { emergencyGenerator } from "./controller/emergency.controller.js";
 import { moveAmbulance } from "./controller/movement.controller.js";
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT||5000;
 app.use(cors());
 app.use(express.json());
 
