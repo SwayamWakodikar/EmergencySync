@@ -26,10 +26,12 @@ export async function emergencyGenerator(req, res) {
     );
     const emergencyId = rows[0].id;
 
-    await assignment(emergencyId),
+    await assignment(emergencyId);
 
-    console.log("Emergency Created", emergencyId)
+    console.log("Emergency Created", emergencyId);
+    res.status(201).json({ success: true, id: emergencyId });
   } catch (err) {
-    console.error(err) 
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create emergency' });
   }
 }
