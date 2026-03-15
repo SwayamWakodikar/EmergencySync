@@ -4,26 +4,27 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-base:       #0a0c12;
-  --bg-surface:    #111420;
-  --bg-card:       #161b2e;
-  --bg-hover:      #1e2540;
-  --border:        #252d47;
-  --accent:        #3b82f6;
-  --accent-glow:   rgba(59,130,246,0.35);
-  --accent-soft:   rgba(59,130,246,0.12);
-  --danger:        #ef4444;
-  --danger-soft:   rgba(239,68,68,0.15);
-  --warning:       #f97316;
-  --warning-soft:  rgba(249,115,22,0.15);
-  --success:       #22c55e;
-  --success-soft:  rgba(34,197,94,0.15);
-  --text-primary:  #f1f5f9;
+  --bg-base:       #020617; /* Very dark slate/blue */
+  --bg-surface:    rgba(15, 23, 42, 0.75); /* Slate 900 */
+  --bg-card:       rgba(30, 41, 59, 0.85); /* Slate 800 */
+  --bg-hover:      #334155;
+  --border:        rgba(56, 189, 248, 0.15); /* Soft cyan border */
+  --accent:        #38bdf8; /* Cyan */
+  --accent-glow:   rgba(56, 189, 248, 0.4);
+  --accent-soft:   rgba(56, 189, 248, 0.15);
+  --danger:        #fb7185; /* Pink-ish red */
+  --danger-soft:   rgba(251, 113, 133, 0.15);
+  --warning:       #fbbf24; /* Amber */
+  --warning-soft:  rgba(251, 191, 36, 0.15);
+  --success:       #34d399; /* Emerald */
+  --success-soft:  rgba(52, 211, 153, 0.15);
+  --text-primary:  #f8fafc;
   --text-secondary:#94a3b8;
-  --text-muted:    #475569;
-  --radius:        10px;
-  --radius-lg:     14px;
-  --shadow:        0 4px 24px rgba(0,0,0,0.5);
+  --text-muted:    #64748b;
+  --radius:        16px;
+  --radius-lg:     24px;
+  --shadow:        0 12px 40px -8px rgba(0, 0, 0, 0.8);
+  --shadow-sm:     0 4px 12px -2px rgba(0, 0, 0, 0.5);
 }
 
 html, body, #root {
@@ -39,14 +40,15 @@ html, body, #root {
 
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 /* ─── Leaflet overrides ──────────────────────────────────────── */
 .leaflet-container {
-  background: #0d1117;
+  background: #020617;
   border-radius: var(--radius-lg);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 .leaflet-popup-content-wrapper {
   background: var(--bg-card) !important;
@@ -54,17 +56,27 @@ html, body, #root {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
   box-shadow: var(--shadow) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 .leaflet-popup-tip { background: var(--bg-card) !important; }
-.leaflet-popup-content { font-family: 'Inter', sans-serif !important; }
+.leaflet-popup-content { font-family: 'Inter', sans-serif !important; margin: 12px !important; }
+
+/* hide default attribution for a cleaner look */
+.leaflet-control-attribution {
+  background: rgba(15,23,42,0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  border-radius: 8px 0 0 0 !important;
+  color: var(--text-muted) !important;
+}
 
 /* ─── Custom pulse animations ────────────────────────────────── */
 @keyframes ping {
   75%, 100% { transform: scale(2); opacity: 0; }
 }
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 @keyframes pulse-border {
   0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
@@ -74,7 +86,7 @@ html, body, #root {
   to { transform: rotate(360deg); }
 }
 
-.animate-fade-in-up  { animation: fadeInUp 0.3s ease forwards; }
+.animate-fade-in-up  { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-spin        { animation: spin 1s linear infinite; }
 
 /* ─── Marker styles ──────────────────────────────────────────── */
@@ -84,15 +96,16 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.8);
 }
 
 /* ─── Glassmorphism card ─────────────────────────────────────── */
 .glass {
-  background: rgba(22,27,46,0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 /* ─── Status badge tweaks ────────────────────────────────────── */
@@ -100,14 +113,15 @@ html, body, #root {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
 }
-.badge-waiting  { background: var(--danger-soft);  color: var(--danger); }
-.badge-assigned { background: var(--warning-soft); color: var(--warning); }
-.badge-completed{ background: var(--success-soft); color: var(--success); }
-.badge-free     { background: var(--accent-soft);  color: var(--accent); }
+.badge-waiting  { background: var(--danger-soft);  color: var(--danger); box-shadow: inset 0 0 0 1px rgba(251,113,133,0.3); }
+.badge-assigned { background: var(--warning-soft); color: var(--warning); box-shadow: inset 0 0 0 1px rgba(251,191,36,0.3); }
+.badge-completed{ background: var(--success-soft); color: var(--success); box-shadow: inset 0 0 0 1px rgba(52,211,153,0.3); }
+.badge-free     { background: var(--accent-soft);  color: var(--accent); box-shadow: inset 0 0 0 1px rgba(56,189,248,0.3); }

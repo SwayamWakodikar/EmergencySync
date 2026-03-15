@@ -1,158 +1,155 @@
-import EmergencyList from './EmergencyList';
+import { useState } from 'react';
 import type { Ambulance, Emergency } from '../services/api';
 
 interface Props {
   ambulances: Ambulance[];
   emergencies: Emergency[];
-  onCreateEmergency: () => void;
+  onCreateEmergency: (description: string) => void;
   isCreating: boolean;
   lastUpdated: Date | null;
   isConnected: boolean;
 }
 
-function StatCard({
-  label,
-  value,
-  color,
-  emoji,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  emoji: string;
-}) {
-  return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        padding: '10px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        transition: 'border-color 0.2s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = color)}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-    >
-      <div style={{ fontSize: 18 }}>{emoji}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
 export default function Sidebar({
-  ambulances,
-  emergencies,
   onCreateEmergency,
   isCreating,
-  lastUpdated,
-  isConnected,
 }: Props) {
-  const waiting = emergencies.filter((e) => e.status === 'WAITING').length;
-  const assigned = emergencies.filter((e) => e.status === 'ASSIGNED').length;
-  const completed = emergencies.filter((e) => e.status === 'COMPLETED').length;
-  const freeAmbs = ambulances.filter((a) => a.status === 'FREE').length;
+  const [description, setDescription] = useState('');
 
   return (
-    <aside
-      style={{
-        width: 280,
-        minWidth: 280,
-        background: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '16px 12px',
-        gap: 12,
-        overflowY: 'auto',
-      }}
-    >
-      {/* Header */}
-      <div>
-        <h2 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
-          Dispatch Overview
-        </h2>
-        <div className="flex items-center gap-1.5">
-          <div
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: isConnected ? '#22c55e' : '#ef4444',
-              boxShadow: `0 0 6px ${isConnected ? '#22c55e' : '#ef4444'}`,
-            }}
-          />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {isConnected ? 'Live' : 'Disconnected'}
-            {lastUpdated && ` · ${lastUpdated.toLocaleTimeString()}`}
-          </span>
-        </div>
-      </div>
+    <>
 
-      {/* Stat grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <StatCard label="Free" value={freeAmbs} color="#3b82f6" emoji="🚑" />
-        <StatCard label="Waiting" value={waiting} color="#ef4444" emoji="🚨" />
-        <StatCard label="Assigned" value={assigned} color="#f97316" emoji="⚡" />
-        <StatCard label="Done" value={completed} color="#22c55e" emoji="✅" />
-      </div>
-
-      {/* Create Emergency Button */}
-      <button
-        id="btn-create-emergency"
-        onClick={onCreateEmergency}
-        disabled={isCreating}
-        style={{
-          width: '100%',
-          padding: '11px 0',
+      {/* Create Emergency Form */}
+      <div 
+        style={{ 
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
-          border: 'none',
-          cursor: isCreating ? 'not-allowed' : 'pointer',
-          background: isCreating
-            ? 'rgba(239,68,68,0.3)'
-            : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-          color: 'white',
-          fontWeight: 700,
-          fontSize: 14,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          boxShadow: isCreating ? 'none' : '0 4px 16px rgba(239,68,68,0.35)',
-          transition: 'all 0.2s',
-          fontFamily: 'inherit',
-          letterSpacing: '0.02em',
-        }}
-        onMouseEnter={(e) => {
-          if (!isCreating) (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+          padding: 14,
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 12, 
+          marginTop: 4,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         }}
       >
-        {isCreating ? (
-          <>
-            <span className="animate-spin" style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%' }} />
-            Dispatching…
-          </>
-        ) : (
-          <>🚨 Create Emergency</>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--danger)' }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+           Dispatch New Emergency
+        </div>
+        <div style={{ position: 'relative' }}>
+          <textarea
+            placeholder="Describe the emergency... (e.g., Car accident at Main St.)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                if (!isCreating && description.trim()) {
+                  onCreateEmergency(description);
+                  setDescription('');
+                }
+              }
+            }}
+            disabled={isCreating}
+            maxLength={150}
+            style={{
+              width: '100%',
+              height: 76,
+              padding: '10px 12px',
+              paddingBottom: '24px', // Make room for char count
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              lineHeight: 1.4,
+              resize: 'none',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s ease',
+              outline: 'none',
+            }}
+            onFocus={(e) => {
+               e.currentTarget.style.borderColor = '#ef4444';
+               e.currentTarget.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.15)';
+               e.currentTarget.style.background = 'var(--bg-card)';
+            }}
+            onBlur={(e) => {
+               e.currentTarget.style.borderColor = 'var(--border)';
+               e.currentTarget.style.boxShadow = 'none';
+               e.currentTarget.style.background = 'var(--bg-surface)';
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            bottom: 6,
+            right: 8,
+            fontSize: 10,
+            fontWeight: 600,
+            color: description.length >= 150 ? '#ef4444' : 'var(--text-muted)',
+            pointerEvents: 'none',
+          }}>
+            {description.length}/150
+          </div>
+        </div>
+        <button
+          id="btn-create-emergency"
+          onClick={() => {
+            if (description.trim()) {
+              onCreateEmergency(description);
+              setDescription('');
+            }
+          }}
+          disabled={isCreating || !description.trim()}
+          style={{
+            width: '100%',
+            padding: '11px 0',
+            borderRadius: 'var(--radius)',
+            border: 'none',
+            cursor: (isCreating || !description.trim()) ? 'not-allowed' : 'pointer',
+            background: (isCreating || !description.trim())
+              ? 'rgba(239,68,68,0.15)'
+              : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+            color: (isCreating || !description.trim()) ? 'var(--text-muted)' : 'white',
+            fontWeight: 700,
+            fontSize: 14,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            boxShadow: (isCreating || !description.trim()) ? 'none' : '0 4px 16px rgba(239,68,68,0.35)',
+            transition: 'all 0.2s ease',
+            fontFamily: 'inherit',
+            letterSpacing: '0.02em',
+          }}
+          onMouseEnter={(e) => {
+            if (!isCreating && description.trim()) {
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(239,68,68,0.4)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+            if (!isCreating && description.trim()) {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(239,68,68,0.35)';
+            }
+          }}
+        >
+          {isCreating ? (
+            <>
+              <span className="animate-spin" style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%' }} />
+              Dispatching…
+            </>
+          ) : (
+            <>Dispatch Now</>
+          )}
+        </button>
+        {!isCreating && (
+          <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', marginTop: -6 }}>
+            Press <kbd style={{ fontFamily: 'inherit', background: 'var(--bg-card)', padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)' }}>Ctrl</kbd> + <kbd style={{ fontFamily: 'inherit', background: 'var(--bg-card)', padding: '2px 4px', borderRadius: 4, border: '1px solid var(--border)' }}>Enter</kbd> to dispatch
+          </div>
         )}
-      </button>
-
-      {/* Divider */}
-      <div style={{ height: 1, background: 'var(--border)' }} />
-
-      {/* Emergency Queue */}
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Emergency Queue
       </div>
-      <EmergencyList emergencies={emergencies} />
-    </aside>
+    </>
   );
 }

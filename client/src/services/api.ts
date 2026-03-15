@@ -20,6 +20,7 @@ export interface Emergency {
     longitude: number;
     status: 'WAITING' | 'ASSIGNED' | 'COMPLETED';
     severity: number;
+    description?: string;
 }
 
 export interface Assignment {
@@ -44,8 +45,8 @@ export const getAssignments = async (): Promise<Assignment[]> => {
     return data;
 };
 
-export const createEmergency = async (): Promise<void> => {
-    await api.post('/emergency');
+export const createEmergency = async (description: string): Promise<void> => {
+    await api.post('/emergency', { description });
 };
 
 export default api;
