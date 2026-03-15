@@ -72,19 +72,15 @@ export default function Dashboard() {
       </div>
 
       {/* ── Floating Top Layout ── */}
-      <div style={{
-        position: 'absolute', top: 24, left: 24, right: 24,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        pointerEvents: 'none', zIndex: 10
-      }}>
+      <div className="floating-layout">
         
         {/* Left Side: Brand & Dispatch Card */}
-        <div className="animate-fade-in-up" style={{ width: 340, pointerEvents: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="animate-fade-in-up left-sidebar">
           {/* Brand & Connection Glass Card */}
           <div className="glass" style={{ padding: '16px 20px', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px var(--accent-glow)' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                 </div>
                 <div>
                   <h1 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>EmergencySync</h1>
@@ -107,9 +103,7 @@ export default function Dashboard() {
         </div>
 
         {/* Floating Center Stats */}
-        <div className="glass animate-fade-in-up" style={{
-            pointerEvents: 'auto', display: 'flex', gap: 32, padding: '16px 40px', borderRadius: 999, animationDelay: '0.1s'
-        }}>
+        <div className="glass animate-fade-in-up center-stats" style={{ animationDelay: '0.1s' }}>
            {[
             { label: 'Free Responders', value: ambulances.length, color: 'var(--accent)' },
             { label: 'Active Incidents', value: emergencies.filter((e) => e.status !== 'COMPLETED').length, color: 'var(--warning)' },
@@ -123,15 +117,17 @@ export default function Dashboard() {
         </div>
 
         {/* Right Side: Emergency Queue Card */}
-        <div className="animate-fade-in-up" style={{ width: 360, height: 'calc(100vh - 48px)', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', animationDelay: '0.2s' }}>
-           <div className="glass" style={{ flex: 1, borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '24px 0' }}>
+        <div className="animate-fade-in-up right-sidebar" style={{ animationDelay: '0.2s' }}>
+           <div className="glass right-sidebar-inner">
+             {/* Mobile Drag Pill */}
+             <div className="mobile-drag" />
              <div style={{ padding: '0 24px', marginBottom: 20 }}>
                <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)' }}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
                  Live Incident Queue
                </h2>
              </div>
-             <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px' }}>
+             <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px', WebkitOverflowScrolling: 'touch' }}>
                 <EmergencyList emergencies={emergencies} />
              </div>
            </div>

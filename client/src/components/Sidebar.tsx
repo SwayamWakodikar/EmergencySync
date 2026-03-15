@@ -21,16 +21,13 @@ export default function Sidebar({
 
       {/* Create Emergency Form */}
       <div 
+        className="glass"
         style={{ 
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
           borderRadius: 'var(--radius)',
           padding: 14,
           display: 'flex', 
           flexDirection: 'column', 
           gap: 12, 
-          marginTop: 4,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -71,7 +71,7 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
 
       {/* Map Overlay Legend */}
       <div
-        className="glass"
+        className="glass hidden md:flex"
         style={{
           position: 'absolute',
           bottom: 32,
