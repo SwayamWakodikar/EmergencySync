@@ -1,5 +1,5 @@
 import pool from "../config/db.js";
-import { completion } from "./completion.services.js";
+// completion is now triggered by movement.controller.js after physical arrival
 
 export const assignNextEmergency = async () => {
   try {
@@ -27,7 +27,7 @@ export const assignNextEmergency = async () => {
         await client.query(`BEGIN`);
         //updating status for ambulance
         await client.query(
-            `UPDATE ambulances SET status = 'BUSY' WHERE id = $1`,
+            `UPDATE ambulances SET status = 'ASSIGNED' WHERE id = $1`,
             [ambulance.id]
         )
         //marking emergency assigned
@@ -45,10 +45,8 @@ export const assignNextEmergency = async () => {
 
       await client.query(`COMMIT`)
 
-      console.log(`Assigned Ambulance ${ambulance.id} → Emergency ${emergency.id}`)
-
-      const distance = Math.sqrt(Math.pow(ambulance.latitude - emergency.latitude, 2) + Math.pow(ambulance.longitude - emergency.longitude, 2));
-      completion(ambulance.id, emergency.id, distance);
+      console.log(`Assigned Ambulance ${ambulance.id} -> Emergency ${emergency.id}`)
+      // movement.controller.js detects arrival and calls completeAssignment()
     }
     catch(err){
         console.log("Error in updating data ",err);

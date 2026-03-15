@@ -57,9 +57,55 @@ app.get("/assignments", async (req, res) => {
   }
 });
 //posting emergency
-app.post('/emergency',emergencyGenerator)
-//dynamically updating data
-setInterval(moveAmbulance,1000);
-app.listen(port, () => {
+app.post('/emergency', emergencyGenerator);
+
+// ── Startup: full DB state normalization
+async function resetStuckAmbulances() {
+  try {
+    // 1. BUSY → FREE  (legacy status from old dispatch.services bug)
+    const { rowCount: busyFixed } = await pool.query(
+      `UPDATE ambulances SET status = 'FREE' WHERE status = 'BUSY'`
+    );
+
+    // 2. ASSIGNED ambulances whose linked emergency is no longer ASSIGNED
+    //    (e.g. server crashed mid-assignment, or old BUSY bug)
+    const { rowCount: ambFixed } = await pool.query(`
+      UPDATE ambulances SET status = 'FREE'
+      WHERE status = 'ASSIGNED'
+        AND id NOT IN (
+          SELECT DISTINCT asn.ambulance_id
+          FROM assignments asn
+          JOIN emergencies e ON asn.emergency_id = e.id
+          WHERE e.status = 'ASSIGNED'
+        )
+    `);
+
+    // 3. ASSIGNED emergencies with no ASSIGNED ambulance responding
+    //    (their ambulance died/was reset — put them back in the queue)
+    const { rowCount: emFixed } = await pool.query(`
+      UPDATE emergencies SET status = 'WAITING'
+      WHERE status = 'ASSIGNED'
+        AND id NOT IN (
+          SELECT DISTINCT asn.emergency_id
+          FROM assignments asn
+          JOIN ambulances a ON asn.ambulance_id = a.id
+          WHERE a.status = 'ASSIGNED'
+        )
+    `);
+
+    const total = busyFixed + ambFixed + emFixed;
+    if (total > 0) {
+      console.log(`Startup cleanup: freed ${busyFixed} BUSY, ${ambFixed} orphan ambulances, re-queued ${emFixed} orphan emergencies`);
+    } else {
+      console.log('Startup cleanup: DB state is clean');
+    }
+  } catch (err) {
+    console.error('Startup cleanup error:', err);
+  }
+}
+
+app.listen(port, async () => {
   console.log(`Server Running at port ${port}`);
+  await resetStuckAmbulances(); // clear any DB leftovers before movement starts
+  setInterval(moveAmbulance, 1000); // start movement loop only after cleanup
 });

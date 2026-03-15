@@ -1,7 +1,6 @@
 // import prisma from '../prisma.js'
 import pool from '../config/db.js';
-import { completion } from '../services/completion.services.js'
-import { assignNextEmergency } from '../services/dispatch.services.js';
+// completion is now handled by movement.controller.js (arrival-based, not timer-based)
 // simple distance calculation (good enough for city scale)
 function distance(a, b) {
   const dx = a.lat - b.lat
@@ -76,11 +75,8 @@ export async function assignment(emergencyId) {
 
     await client.query('COMMIT');
 
-    completion(nearest.id, emergency.id, minDist);
-
-    console.log(
-      ` Assigned ambulance ${nearest.id} → emergency ${emergency.id}`
-    )
+    // movement.controller.js will detect arrival and handle COMPLETED transition
+    console.log(`Assigned ambulance ${nearest.id} -> emergency ${emergency.id}`)
     // await assignNextEmergency();
     return assignment;
   } catch (err) {
