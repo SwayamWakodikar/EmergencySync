@@ -59,7 +59,7 @@ export default function Sidebar({
     if (!description.trim() || isCreating || isLocating) return;
 
     // 1. Use cached GPS coords if the user specifically used the GPS button
-    if (gpsCoords && locationQuery.startsWith(' ')) {
+    if (gpsCoords && locationQuery) {
       onCreateEmergency(description, { latitude: gpsCoords.lat, longitude: gpsCoords.lng });
       setDescription('');
       setLocationQuery('');
