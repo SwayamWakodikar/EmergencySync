@@ -57,16 +57,17 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         // Mark as 'fetching' to prevent duplicate requests
         setRoutesMap((prev) => ({ ...prev, [a.id]: [] }));
 
-        const url = `http://router.project-osrm.org/route/v1/driving/${amb.longitude},${amb.latitude};${em.longitude},${em.latitude}?overview=full&geometries=geojson`;
+        // Use our backend proxy to avoid CORS issues in production
+        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const url = `${BASE_URL}/route?fromLat=${amb.latitude}&fromLng=${amb.longitude}&toLat=${em.latitude}&toLng=${em.longitude}`;
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
-            if (data.routes && data.routes.length > 0) {
-              const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
-              setRoutesMap((prev) => ({ ...prev, [a.id]: coords }));
+            if (data.coords && data.coords.length > 0) {
+              setRoutesMap((prev) => ({ ...prev, [a.id]: data.coords }));
             }
           })
-          .catch((err) => console.error('OSRM route error:', err));
+          .catch((err) => console.error('Route proxy error:', err));
       }
     });
   }, [activeLines, ambulanceMap, emergencyMap, routesMap]);

@@ -59,6 +59,30 @@ app.get("/assignments", async (req, res) => {
 //posting emergency
 app.post('/emergency', emergencyGenerator);
 
+// GET /route?fromLng=&fromLat=&toLng=&toLat=
+// Backend proxy to OSRM — avoids CORS issues in the browser
+app.get('/route', async (req, res) => {
+  const { fromLat, fromLng, toLat, toLng } = req.query;
+  if (!fromLat || !fromLng || !toLat || !toLng) {
+    return res.status(400).json({ error: 'Missing coordinates' });
+  }
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).json({ error: 'OSRM request failed' });
+    const data = await response.json();
+    if (data.routes && data.routes.length > 0) {
+      // Return [lat, lng] pairs (Leaflet format)
+      const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+      return res.json({ coords });
+    }
+    return res.status(404).json({ error: 'No route found' });
+  } catch (err) {
+    console.error('Route proxy error:', err.message);
+    return res.status(500).json({ error: 'Route proxy failed' });
+  }
+});
+
 // ── Startup: full DB state normalization
 async function resetStuckAmbulances() {
   try {
