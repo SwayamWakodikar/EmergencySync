@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import torch
+import os
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 import uvicorn
 
@@ -8,7 +9,7 @@ import uvicorn
 app = FastAPI(title="EmergencySync ML Service")
 
 # 2. Load model and tokenizer from the trained directory
-MODEL_DIR = "model/severity_model"
+MODEL_DIR = os.environ.get("MODEL_DIR", "model/severity_model")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 try:

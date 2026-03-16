@@ -26,13 +26,25 @@ export default function Sidebar({
     }
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLocating(false);
-        setGpsCoords({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        setLocationQuery('📍 Current GPS Location');
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setGpsCoords({ lat, lng });
+
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            setLocationQuery(`${data.display_name}`);
+          } else {
+            setLocationQuery(` Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+          setLocationQuery(` Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+        } finally {
+          setIsLocating(false);
+        }
       },
       (error) => {
         setIsLocating(false);
@@ -47,7 +59,7 @@ export default function Sidebar({
     if (!description.trim() || isCreating || isLocating) return;
 
     // 1. Use cached GPS coords if the user specifically used the GPS button
-    if (gpsCoords && locationQuery === '📍 Current GPS Location') {
+    if (gpsCoords && locationQuery.startsWith(' ')) {
       onCreateEmergency(description, { latitude: gpsCoords.lat, longitude: gpsCoords.lng });
       setDescription('');
       setLocationQuery('');

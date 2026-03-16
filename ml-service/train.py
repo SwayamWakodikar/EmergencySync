@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import torch
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from transformers import (
@@ -10,13 +11,14 @@ from transformers import (
     TrainingArguments,
 )
 from torch.utils.data import Dataset
-import os
 
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
 DATA_PATH  = "data/dataset.csv"
-MODEL_NAME = "model/distilbert-base-uncased"   # local downloaded model
+# On Render (cloud): MODEL_NAME env var is not set → downloads from HuggingFace
+# On local machine: set MODEL_NAME=model/distilbert-base-uncased to use local files
+MODEL_NAME = os.environ.get("MODEL_NAME", "distilbert-base-uncased")
 SAVE_PATH  = "model/severity_model"      # where the trained model gets saved
 NUM_LABELS = 5                           # severity 1–5
 EPOCHS     = 5
