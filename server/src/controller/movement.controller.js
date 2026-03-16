@@ -1,7 +1,6 @@
 import pool from '../config/db.js';
 import { assignNextEmergency } from '../services/dispatch.services.js';
 
-// ─── City waypoints (real Pune landmarks) ────────────────────────────────────
 const CITY_WAYPOINTS = [
   { lat: 18.5317, lng: 73.8469 }, // Shivajinagar
   { lat: 18.5196, lng: 73.8364 }, // Deccan Gymkhana
@@ -23,23 +22,42 @@ const CITY_WAYPOINTS = [
   { lat: 18.6000, lng: 73.8400 }, // Bhosari
 ];
 
-// ─── In-memory state per ambulance ───────────────────────────────────────────
-// PATROL  → { phase: 'PATROL',  destLat, destLng, waypointIndex }
-// TRAVEL  → { phase: 'TRAVEL',  emergencyId, targetLat, targetLng }
-// SOLVING → { phase: 'SOLVING', emergencyId, solveAt }
 const ambulanceState = new Map();
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const FREE_SPEED       = 0.0008; // ~89 m/s  patrol speed
-const ASSIGNED_SPEED   = 0.0014; // ~156 m/s emergency response speed
-const PATROL_ARRIVE    = 0.003;  // ~330 m — snap to next patrol waypoint
-const EMERGENCY_ARRIVE = 0.002;  // ~220 m — "arrived at scene"
-const SOLVE_MIN        = 2000;   // ms minimum on-scene time
-const SOLVE_MAX        = 3000;   // ms maximum on-scene time
+const FREE_SPEED       = 0.0008; 
+const ASSIGNED_SPEED   = 0.0014; 
+const PATROL_ARRIVE    = 0.003;  
+const EMERGENCY_ARRIVE = 0.002;  
+const SOLVE_MIN        = 2000;   
+const SOLVE_MAX        = 3000;   
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+async function getRoute(lat1, lng1, lat2, lng2) {
+  try {
+    const url = `http://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data.routes && data.routes.length > 0) {
+      return data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+    }
+  } catch (err) {
+    console.error('OSRM route fetch failed:', err.message);
+  }
+  return null;
+}
+
 function dist(lat1, lng1, lat2, lng2) {
   return Math.sqrt((lat1 - lat2) ** 2 + (lng1 - lng2) ** 2);
+}
+
+function stepToward(lat, lng, targetLat, targetLng, speed) {
+  const d = dist(lat, lng, targetLat, targetLng);
+  if (d < 0.00001) return { lat: targetLat, lng: targetLng };
+  const ratio  = Math.min(speed / d, 1);
+  return {
+    lat: lat + (targetLat - lat) * ratio,
+    lng: lng + (targetLng - lng) * ratio,
+  };
 }
 
 function pickNextWaypoint(currentIndex) {
@@ -49,28 +67,39 @@ function pickNextWaypoint(currentIndex) {
   return idx;
 }
 
-function stepToward(lat, lng, targetLat, targetLng, speed) {
-  const d = dist(lat, lng, targetLat, targetLng);
-  if (d < 0.00001) return { lat: targetLat, lng: targetLng };
-  const ratio  = Math.min(speed / d, 1);
-  const wobble = (Math.random() - 0.5) * speed * 0.05;
-  return {
-    lat: lat + (targetLat - lat) * ratio + wobble,
-    lng: lng + (targetLng - lng) * ratio + wobble,
-  };
+function stepAlongPath(lat, lng, path, pathIndex, speed) {
+  let currentLat = lat;
+  let currentLng = lng;
+  let remainingSpeed = speed;
+  let currIndex = pathIndex;
+
+  while (remainingSpeed > 0.00001 && currIndex < path.length) {
+    const target = path[currIndex];
+    const d = dist(currentLat, currentLng, target.lat, target.lng);
+    
+    if (d <= remainingSpeed) {
+      remainingSpeed -= d;
+      currentLat = target.lat;
+      currentLng = target.lng;
+      currIndex++;
+    } else {
+      const ratio = remainingSpeed / d;
+      currentLat += (target.lat - currentLat) * ratio;
+      currentLng += (target.lng - currentLng) * ratio;
+      remainingSpeed = 0;
+    }
+  }
+
+  return { newLat: currentLat, newLng: currentLng, newPathIndex: currIndex };
 }
 
-// ─── Complete a solved assignment ─────────────────────────────────────────────
 async function completeAssignment(ambulanceId, emergencyId) {
   try {
-    // Mark the solved emergency COMPLETED
     await pool.query(
       `UPDATE emergencies SET status = 'COMPLETED' WHERE id = $1`,
       [emergencyId]
     );
 
-    // Safety: reset any OTHER stale ASSIGNED emergencies for this ambulance
-    // back to WAITING so they re-enter the queue cleanly
     await pool.query(
       `UPDATE emergencies SET status = 'WAITING'
        WHERE status = 'ASSIGNED'
@@ -79,7 +108,6 @@ async function completeAssignment(ambulanceId, emergencyId) {
       [emergencyId, ambulanceId]
     );
 
-    // Free the ambulance
     await pool.query(
       `UPDATE ambulances SET status = 'FREE' WHERE id = $1`,
       [ambulanceId]
@@ -91,26 +119,18 @@ async function completeAssignment(ambulanceId, emergencyId) {
   }
 }
 
-// ─── Main movement tick ───────────────────────────────────────────────────────
 export async function moveAmbulance() {
   try {
     const now = Date.now();
 
-    // ── Step 1a: Resolve SOLVING ambulances whose timer has expired ───────────
     for (const [ambulanceId, state] of ambulanceState.entries()) {
       if (state.phase !== 'SOLVING') continue;
       if (now >= state.solveAt) {
         ambulanceState.delete(ambulanceId);
         await completeAssignment(ambulanceId, state.emergencyId);
       }
-      // else: still solving — ambulance stays still, skip all movement for it
     }
 
-    // ── Step 1b: Live orphan sweep ────────────────────────────────────────────
-    // Catches ambulances stuck as ASSIGNED mid-session when their linked
-    // emergency is no longer ASSIGNED (completed, re-queued, or state drift).
-    // These ambulances fall into a "dead zone": skipped by patrol (not FREE)
-    // and skipped by travel (no JOIN match). This sweep rescues them every tick.
     const { rows: orphans } = await pool.query(`
       UPDATE ambulances SET status = 'FREE'
       WHERE status = 'ASSIGNED'
@@ -124,18 +144,16 @@ export async function moveAmbulance() {
     `);
     if (orphans.length > 0) {
       const ids = orphans.map(r => r.id);
-      ids.forEach(id => ambulanceState.delete(id)); // clear any stale in-memory state
+      ids.forEach(id => ambulanceState.delete(id));
       console.log(`Orphan sweep: freed ambulance(s) ${ids.join(', ')} — will be re-dispatched`);
     }
 
-    // IDs currently in SOLVING phase (should not be moved this tick)
     const solvingIds = new Set(
       [...ambulanceState.entries()]
         .filter(([, s]) => s.phase === 'SOLVING')
         .map(([id]) => id)
     );
 
-    // ── Step 2: Move FREE ambulances (patrol between city waypoints) ──────────
     const { rows: freeAmbs } = await pool.query(
       `SELECT id, latitude AS lat, longitude AS lng FROM ambulances WHERE status = 'FREE'`
     );
@@ -143,33 +161,34 @@ export async function moveAmbulance() {
     for (const amb of freeAmbs) {
       let state = ambulanceState.get(amb.id);
 
-      // First time FREE (just became free): assign patrol waypoint
-      if (!state || state.phase !== 'PATROL') {
-        const idx = Math.floor(Math.random() * CITY_WAYPOINTS.length);
+      if (!state || state.phase !== 'PATROL' || dist(amb.lat, amb.lng, state.destLat, state.destLng) < PATROL_ARRIVE || (!state.isFetching && state.path && state.pathIndex >= state.path.length)) {
+        const idx = pickNextWaypoint(state ? state.waypointIndex : undefined);
         const wp  = CITY_WAYPOINTS[idx];
-        state = { phase: 'PATROL', destLat: wp.lat, destLng: wp.lng, waypointIndex: idx };
+        
+        state = { phase: 'PATROL', destLat: wp.lat, destLng: wp.lng, waypointIndex: idx, path: [], isFetching: true, pathIndex: 0 };
         ambulanceState.set(amb.id, state);
+
+        getRoute(amb.lat, amb.lng, wp.lat, wp.lng).then(route => {
+          if (route) {
+            state.path = route;
+          } else {
+             state.path = [{ lat: wp.lat, lng: wp.lng }];
+          }
+          state.isFetching = false;
+        });
       }
 
-      // Reached waypoint? Pick next one
-      if (dist(amb.lat, amb.lng, state.destLat, state.destLng) < PATROL_ARRIVE) {
-        const idx = pickNextWaypoint(state.waypointIndex);
-        const wp  = CITY_WAYPOINTS[idx];
-        state.destLat = wp.lat; state.destLng = wp.lng; state.waypointIndex = idx;
-      }
+      if (state && !state.isFetching && state.path && state.pathIndex < state.path.length) {
+        const { newLat, newLng, newPathIndex } = stepAlongPath(amb.lat, amb.lng, state.path, state.pathIndex, FREE_SPEED);
+        state.pathIndex = newPathIndex;
 
-      const { lat: newLat, lng: newLng } = stepToward(
-        amb.lat, amb.lng, state.destLat, state.destLng, FREE_SPEED
-      );
-      await pool.query(
-        'UPDATE ambulances SET latitude = $1, longitude = $2 WHERE id = $3',
-        [newLat, newLng, amb.id]
-      );
+        await pool.query(
+          'UPDATE ambulances SET latitude = $1, longitude = $2 WHERE id = $3',
+          [newLat, newLng, amb.id]
+        );
+      }
     }
 
-    // ── Step 3: Move ASSIGNED ambulances toward their emergency ───────────────
-    // DISTINCT ON (a.id) guarantees each ambulance only targets ONE emergency
-    // (the most recently assigned one), even if old stale rows exist in assignments.
     const { rows: assignedAmbs } = await pool.query(`
       SELECT DISTINCT ON (a.id)
              a.id,
@@ -187,43 +206,64 @@ export async function moveAmbulance() {
     `);
 
     for (const amb of assignedAmbs) {
-      // Skip ambulances already in SOLVING phase
       if (solvingIds.has(amb.id)) continue;
 
       const d = dist(amb.lat, amb.lng, amb.target_lat, amb.target_lng);
 
       if (d < EMERGENCY_ARRIVE) {
-        // Arrived at scene — enter SOLVING phase
         const solveDelay = SOLVE_MIN + Math.random() * (SOLVE_MAX - SOLVE_MIN);
         ambulanceState.set(amb.id, {
           phase:       'SOLVING',
           emergencyId: amb.emergency_id,
           solveAt:     now + solveDelay,
         });
-        console.log(`Ambulance ${amb.id} on-scene at Emergency ${amb.emergency_id}, solving for ${(solveDelay / 1000).toFixed(1)}s`);
+        console.log(`Ambulance ${amb.id} on-scene at Emergency ${amb.emergency_id}, solving`);
       } else {
-        // Still travelling — update in-memory state and move
-        ambulanceState.set(amb.id, {
-          phase:       'TRAVEL',
-          emergencyId: amb.emergency_id,
-          targetLat:   amb.target_lat,
-          targetLng:   amb.target_lng,
-        });
+        let state = ambulanceState.get(amb.id);
+        if (!state || state.phase !== 'TRAVEL' || state.emergencyId !== amb.emergency_id) {
+          state = {
+            phase: 'TRAVEL',
+            emergencyId: amb.emergency_id,
+            targetLat: amb.target_lat,
+            targetLng: amb.target_lng,
+            path: [],
+            pathIndex: 0,
+            isFetching: true
+          };
+          ambulanceState.set(amb.id, state);
 
-        const { lat: newLat, lng: newLng } = stepToward(
-          amb.lat, amb.lng, amb.target_lat, amb.target_lng, ASSIGNED_SPEED
-        );
-        await pool.query(
-          'UPDATE ambulances SET latitude = $1, longitude = $2 WHERE id = $3',
-          [newLat, newLng, amb.id]
-        );
+          getRoute(amb.lat, amb.lng, amb.target_lat, amb.target_lng).then(route => {
+            if (route) {
+              state.path = route;
+            } else {
+              state.path = [{ lat: amb.target_lat, lng: amb.target_lng }];
+            }
+            state.isFetching = false;
+          });
+        }
+
+        if (state && !state.isFetching && state.path) {
+          if (state.pathIndex < state.path.length) {
+            const { newLat, newLng, newPathIndex } = stepAlongPath(amb.lat, amb.lng, state.path, state.pathIndex, ASSIGNED_SPEED);
+            state.pathIndex = newPathIndex;
+
+            await pool.query(
+              'UPDATE ambulances SET latitude = $1, longitude = $2 WHERE id = $3',
+              [newLat, newLng, amb.id]
+            );
+          } else {
+            const { lat: newLat, lng: newLng } = stepToward(
+              amb.lat, amb.lng, amb.target_lat, amb.target_lng, ASSIGNED_SPEED
+            );
+            await pool.query(
+              'UPDATE ambulances SET latitude = $1, longitude = $2 WHERE id = $3',
+              [newLat, newLng, amb.id]
+            );
+          }
+        }
       }
     }
 
-    // ── Step 4: PROACTIVE DISPATCH ────────────────────────────────────────────
-    // Every tick, pair unmatched FREE ambulances with WAITING emergencies.
-    // This is the key step: without it, free ambulances patrol indefinitely
-    // while waiting emergencies pile up with no trigger to dispatch them.
     const { rows: counts } = await pool.query(`
       SELECT
         (SELECT COUNT(*) FROM ambulances  WHERE status = 'FREE')    AS free_count,
@@ -233,7 +273,6 @@ export async function moveAmbulance() {
     const waitingCount = parseInt(counts[0].waiting_count);
 
     if (freeCount > 0 && waitingCount > 0) {
-      // Dispatch as many pairs as possible this tick
       const pairs = Math.min(freeCount, waitingCount);
       for (let i = 0; i < pairs; i++) {
         await assignNextEmergency();
@@ -241,8 +280,7 @@ export async function moveAmbulance() {
       console.log(`Dispatched ${pairs} ambulance(s) to waiting emergencies`);
     }
 
-    // ── Logging ──────────────────────────────────────────────────────────────
-    const patrolCount  = freeAmbs.length;
+in    const patrolCount  = freeAmbs.length;
     const travelCount  = assignedAmbs.filter(a => !solvingIds.has(a.id)).length;
     const solvingCount = solvingIds.size;
     if (patrolCount + travelCount + solvingCount > 0) {
