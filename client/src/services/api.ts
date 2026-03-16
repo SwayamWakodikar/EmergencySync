@@ -45,8 +45,15 @@ export const getAssignments = async (): Promise<Assignment[]> => {
     return data;
 };
 
-export const createEmergency = async (description: string): Promise<void> => {
-    await api.post('/emergency', { description });
+export const createEmergency = async (description: string, location?: {latitude: number, longitude: number}): Promise<void> => {
+    try {
+        await api.post('/emergency', { description, ...location });
+    } catch (err: any) {
+        if (err.response && err.response.data && err.response.data.error) {
+            throw new Error(err.response.data.error);
+        }
+        throw err;
+    }
 };
 
 export const pingServer = async (): Promise<void> => {

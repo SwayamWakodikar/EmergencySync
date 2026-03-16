@@ -12,6 +12,22 @@ function randomBetween(min, max) {
 
 export async function emergencyGenerator(req, res) {
   try {
+    const { latitude, longitude } = req.body || {};
+    let lat, lng;
+
+    if (latitude !== undefined && longitude !== undefined) {
+      lat = parseFloat(latitude);
+      lng = parseFloat(longitude);
+
+      // Simple bounding box check for Pune region
+      if (lat < 18.3 || lat > 18.8 || lng < 73.6 || lng > 74.1) {
+        return res.status(400).json({ error: "Out of service area. We currently only dispatch ambulances within Pune." });
+      }
+    } else {
+      lat = randomBetween(LAT_MIN, LAT_MAX);
+      lng = randomBetween(LNG_MIN, LNG_MAX);
+    }
+
     const severity = Math.floor(Math.random() * 5) + 1
 
     /*
@@ -22,7 +38,7 @@ export async function emergencyGenerator(req, res) {
     const { rows } = await pool.query(
       `INSERT INTO emergencies (latitude, longitude, severity, status, created_at) 
        VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
-      [randomBetween(LAT_MIN, LAT_MAX), randomBetween(LNG_MIN, LNG_MAX), severity, 'WAITING']
+      [lat, lng, severity, 'WAITING']
     );
     const emergencyId = rows[0].id;
 

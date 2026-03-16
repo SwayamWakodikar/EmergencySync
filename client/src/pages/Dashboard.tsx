@@ -47,14 +47,14 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [fetchData]);
 
-  const handleCreateEmergency = async (description: string) => {
+  const handleCreateEmergency = async (description: string, location?: {latitude: number, longitude: number}) => {
     setIsCreating(true);
     try {
-      await createEmergency(description);
+      await createEmergency(description, location);
       await fetchData();
       showNotification('Emergency created and dispatched!', 'success');
-    } catch {
-      showNotification('Failed to create emergency. Is the server running?', 'error');
+    } catch (err: any) {
+      showNotification(err.message || 'Failed to create emergency. Is the server running?', 'error');
     } finally {
       setIsCreating(false);
     }
