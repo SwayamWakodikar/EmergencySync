@@ -49,4 +49,8 @@ export const createEmergency = async (description: string): Promise<void> => {
     await api.post('/emergency', { description });
 };
 
+export const pingServer = async (): Promise<void> => {
+    await api.get('/');
+};
+
 export default api;

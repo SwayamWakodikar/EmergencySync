@@ -61,7 +61,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ position: 'relative', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-base)' }}>
+    <div style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
       {/* ── Background Map ── */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <MapView
