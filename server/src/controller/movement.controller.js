@@ -280,7 +280,7 @@ export async function moveAmbulance() {
       console.log(`Dispatched ${pairs} ambulance(s) to waiting emergencies`);
     }
 
-in    const patrolCount  = freeAmbs.length;
+    const patrolCount  = freeAmbs.length;
     const travelCount  = assignedAmbs.filter(a => !solvingIds.has(a.id)).length;
     const solvingCount = solvingIds.size;
     if (patrolCount + travelCount + solvingCount > 0) {
