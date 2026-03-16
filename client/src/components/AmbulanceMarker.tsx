@@ -24,7 +24,7 @@ function createAmbulanceIcon(status: string) {
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
       <circle cx="18" cy="18" r="14" fill="${colorHex}" fill-opacity="0.15" stroke="${colorHex}" stroke-width="1.5"/>
       <circle cx="18" cy="18" r="9" fill="${colorHex}" stroke="white" stroke-width="2" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"/>
-      <path d="M12 5v14M5 12h14" stroke="white" stroke-width="3" stroke-linecap="round" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"/>
+      <path d="M18 14v8M14 18h8" stroke="white" stroke-width="2.5" stroke-linecap="round" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"/>
     </svg>
   `;
   return L.divIcon({
