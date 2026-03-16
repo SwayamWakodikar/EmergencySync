@@ -1,0 +1,151 @@
+description,severity
+"Patient is unconscious and not breathing, possible cardiac arrest",5
+"Multiple gunshot wounds, patient losing blood rapidly",5
+"Severe head trauma after vehicle collision, unresponsive",5
+"Patient having a stroke, facial drooping and unable to speak",5
+"Drowning victim pulled from water, not breathing",5
+"Severe allergic reaction, throat swelling, patient cannot breathe",5
+"Patient in full cardiac arrest, bystander performing CPR",5
+"Serious stab wound to the chest, patient critical",5
+"Overdose on unknown substances, patient unconscious",5
+"Major building fire with people trapped inside",5
+"Child not breathing after near-drowning incident",5
+"Severe burns over more than 30 percent of body",5
+"Patient collapsed suddenly, no pulse detected",5
+"Motorcycle accident, rider ejected, not moving",5
+"Suspected heart attack, crushing chest pain and sweating",5
+"Patient unresponsive after seizure lasting over 5 minutes",5
+"Gunshot wound to the head, heavy bleeding",5
+"Electrocution victim unresponsive",5
+"Infant not breathing, turning blue",5
+"Pedestrian struck by vehicle at high speed, unresponsive",5
+"Patient having a severe asthma attack, unable to breathe",4
+"Chest pain radiating to left arm, patient very anxious",4
+"High fever of 104F with confusion and stiff neck",4
+"Deep laceration on arm with heavy bleeding, patient dizzy",4
+"Patient fell from second floor, possible spinal injury",4
+"Diabetic patient unconscious, known diabetes history",4
+"Severe abdominal pain, patient vomiting blood",4
+"Child with high fever and seizure history, now unresponsive",4
+"Broken femur after fall, bone visible, heavy bleeding",4
+"Elderly patient collapsed, history of heart disease",4
+"Patient with known epilepsy having repeated seizures",4
+"Pregnant woman in labor, baby is coming now",4
+"Severe allergic reaction to bee sting, hives and swelling",4
+"Patient fell down stairs, unable to move legs",4
+"Carbon monoxide poisoning suspected, multiple people ill",4
+"Cyclist hit by car, possible broken bones, conscious but confused",4
+"Patient with chest tightness and shortness of breath, age 70",4
+"Second degree burns from kitchen fire on hands and arms",4
+"Construction worker fell from scaffold, conscious but in pain",4
+"Patient reporting sudden vision loss in one eye",4
+"Moderate car accident, two patients with neck pain",3
+"Patient vomiting repeatedly and showing signs of dehydration",3
+"Elderly person fell at home, complaining of hip pain",3
+"Child swallowed unknown household chemical",3
+"Worker injured hand with power tool, bleeding controlled",3
+"Patient with known asthma, inhaler not working",3
+"Broken arm after fall, deformity visible but patient is conscious",3
+"Moderate allergic reaction, hives and itching",3
+"Patient with severe migraine and vomiting, cannot move",3
+"Psychiatric emergency, patient threatening harm to themselves",3
+"Person having a panic attack, hyperventilating",3
+"Elderly patient confused and disoriented, possible dementia episode",3
+"Possible food poisoning, severe stomach cramps and diarrhea",3
+"Patient with urinary tract infection and high fever",3
+"Basketball player twisted knee badly, cannot walk",3
+"Animal bite on the forearm, wound is deep",3
+"Patient dizzy and unable to stand, possible vertigo",3
+"Worker with chemical splash to the eyes",3
+"Child with suspected broken wrist after fall from bike",3
+"Patient with high blood pressure reading, headache and nausea",3
+"Minor car accident, patient has mild neck pain and is walking",2
+"Patient slipped and cut hand on glass, bleeding slowly",2
+"Elderly person fell, no visible injury but complaining of pain",2
+"Child has been vomiting twice, no fever, alert and active",2
+"Patient has a low-grade fever and sore throat",2
+"Minor kitchen burn on fingers",2
+"Patient twisted ankle, swelling present, can bear some weight",2
+"Person with toothache requesting pain relief",2
+"Nosebleed that has been going on for 10 minutes",2
+"Patient reports mild chest discomfort, no history of heart disease",2
+"Child with suspected mild concussion after bumping head",2
+"Patient complaining of back pain after lifting heavy object",2
+"Person with a rash spreading across the arm, no breathing issues",2
+"Elderly patient requesting wellness check, feeling unwell",2
+"Mild allergic reaction, some itching and sneezing after eating",2
+"Patient fell from a chair, bruise forming but no major injury",2
+"Cut on foot from stepping on glass, bleeding slowly",2
+"Child with high fever, 103F, but alert and responsive",2
+"Person with diarrhea and mild stomach cramps since morning",2
+"Patient requests transport to hospital for scheduled procedure",2
+"Patient requesting transport to hospital for non-urgent checkup",1
+"Minor scrape on the knee after a bike ride",1
+"Patient has a mild headache and wants it checked out",1
+"Person reports feeling slightly dizzy when standing up quickly",1
+"Patient has minor sunburn on shoulders",1
+"Child has a small cut on the finger, barely bleeding",1
+"Person requesting advice about a minor bruise from yesterday",1
+"Patient wants blood pressure checked, feeling fine otherwise",1
+"Person with seasonal allergies requesting medication advice",1
+"Request for welfare check on elderly neighbor who is responsive",1
+"Patient has a splinter in their hand",1
+"Person reporting mild nausea after eating",1
+"Patient twisted toe, walking normally, minimal pain",1
+"Minor fender bender, no injuries, requesting documentation",1
+"Person has had hiccups for an hour and is concerned",1
+"Caller requesting information about nearest hospital",1
+"Patient has a sore muscle from exercise",1
+"Person reporting mild ringing in one ear since this morning",1
+"Child scraped both knees at playground, crying but alert",1
+"Patient has a minor paper cut that will not stop bleeding after 5 minutes",1
+"Unconscious patient not responding to any stimuli",5
+"Vehicle rollover on highway, multiple casualties reported",5
+"Industrial explosion with multiple workers injured",5
+"Patient with known peanut allergy ate peanut butter, throat closing",5
+"Newborn not breathing after home delivery",5
+"Patient with third degree burns on face and hands",5
+"Person found hanging, bystanders have cut them down, unresponsive",5
+"Multi-vehicle pile up, several people trapped in vehicles",5
+"Patient having violent seizure lasting over 10 minutes",5
+"Teenager overdosed on prescription pills, found by parents",5
+"Chest pain and sudden numbness in arm and face",4
+"Patient with severe nosebleed that has not stopped for 30 minutes",4
+"Worker crushed by heavy machinery, trapped",4
+"Child with breathing difficulty after swallowing small object",4
+"Elderly patient with dementia found wandering in the cold",4
+"Patient with appendix pain on right side, severe and constant",4
+"Pregnant woman fell down stairs",4
+"Teenager reporting chest pain during sports activity",4
+"Patient with sickle cell crisis, severe pain",4
+"Person reporting sudden severe one-sided headache",4
+"Moderate bicycle accident, patient bleeding from head but conscious",3
+"Patient with suspected dislocated shoulder after fall",3
+"Domestic argument with reported minor injuries",3
+"Child with fever of 102F and earache",3
+"Patient fell off electric scooter, road rash and minor lacerations",3
+"Worker with back injury from lifting, unable to walk straight",3
+"Elderly patient with painful urination and confusion",3
+"Teen with possible fractured nose after sports collision",3
+"Patient with known anxiety disorder having a severe episode",3
+"Person stung by multiple bees, mild swelling at sting sites",3
+"Patient with minor frostbite on fingers after being outside",2
+"Child swallowed a coin, no breathing difficulty",2
+"Elderly person reports feeling faint but is sitting and stable",2
+"Patient with a bad cold, fever of 101F, requesting transport",2
+"Person with eye irritation after swimming in pool",2
+"Minor sprain from stepping off a curb",2
+"Patient reports mild cramping, no fever, no bleeding",2
+"Person with insect bite on leg, small local swelling",2
+"Child with mild earache, no fever",2
+"Patient accidentally inhaled smoke briefly, no breathing issues",2
+"Person requesting transport home from hospital after discharge",1
+"Patient has a dry cough and wants to be evaluated",1
+"Non urgent request to check blood sugar level",1
+"Person concerned about a mole that looks unusual",1
+"Patient requests standby ambulance for a community event",1
+"Caller reporting a neighbor acting strangely but no emergency",1
+"Minor headache after a long day at work",1
+"Patient with mild lower back soreness from sleeping awkwardly",1
+"Person requesting advice on taking over the counter medication",1
+"Caller not sure if they need an ambulance, feeling slightly off",1
