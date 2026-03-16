@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# ML Model files (too large for GitHub)
+model/
+model/checkpoints/
+model/severity_model/
+model/distilbert-base-uncased/
+
+# Logs
+model/logs/
