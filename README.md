@@ -25,7 +25,7 @@ The project is divided into two main parts:
 
 **Containerization:**
 - Docker & Docker Compose
-
+ 
 ## 🛠️ Getting Started
 
 ### Prerequisites
