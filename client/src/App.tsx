@@ -5,6 +5,8 @@ import { pingServer } from './services/api';
 export default function App() {
   const [isServerReady, setIsServerReady] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,10 +20,24 @@ export default function App() {
             if (isMounted) setIsServerReady(true);
           }, 1000); // 1s matches the duration of the transition
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to wake up server:", err);
-        // Retry until online
-        setTimeout(wakeUpServer, 3000);
+        if (isMounted) {
+          const isRateLimited = err.response && err.response.status === 429;
+          
+          if (isRateLimited) {
+            // Render explicitly suspended the server (status 429). Stop and show error.
+            setIsSuspended(true);
+            console.warn("Server is suspended by host. Stopping automatic retries.");
+            return;
+          }
+
+          // Otherwise, it might be restarting (503, 504, or network error).
+          // Keep retrying quietly and don't trigger the "Service not available" state.
+          setTimeout(() => {
+            if (isMounted) setRetryCount(prev => prev + 1);
+          }, 3000);
+        }
       }
     };
     wakeUpServer();
@@ -29,7 +45,7 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [retryCount]);
 
   return (
     <>
@@ -77,15 +93,17 @@ export default function App() {
             <h1 className="text-2xl font-semibold text-white mb-2 tracking-wide drop-shadow-md">
               EmergencySync
             </h1>
-            <p className="text-gray-300 text-sm mb-8 animate-pulse text-center font-light tracking-wide max-w-xs">
-              Establishing secure connection...
+            <p className={`text-sm mb-8 text-center font-light tracking-wide max-w-xs transition-colors duration-500 ${isSuspended ? 'text-red-400 font-medium' : 'text-gray-300 animate-pulse'}`}>
+              {isSuspended 
+                ? "Service not available, try again later" 
+                : "Establishing secure connection..."}
             </p>
 
             {/* Minimalist loading line */}
             <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-red-500 rounded-full w-1/3"
-                style={{ animation: 'slideRight 1.5s ease-in-out infinite' }}
+                className={`h-full rounded-full w-1/3 transition-colors duration-500 ${isSuspended ? 'bg-red-600' : 'bg-red-500'}`}
+                style={{ animation: isSuspended ? 'none' : 'slideRight 1.5s ease-in-out infinite' }}
               ></div>
             </div>
           </div>
@@ -104,4 +122,5 @@ export default function App() {
     </>
   );
 }
+
 

@@ -128,7 +128,7 @@ async function resetStuckAmbulances() {
   }
 }
 
-app.listen(port, async () => {
+app.listen(port, "0.0.0.0", async () => {
   console.log(`Server Running at port ${port}`);
   await resetStuckAmbulances(); // clear any DB leftovers before movement starts
   setInterval(moveAmbulance, 1000); // start movement loop only after cleanup
