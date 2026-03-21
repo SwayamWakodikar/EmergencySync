@@ -23,17 +23,27 @@ export default function App() {
       } catch (err: any) {
         console.error("Failed to wake up server:", err);
         if (isMounted) {
-          const isRateLimited = err.response && err.response.status === 429;
+          // Detect 429 Too Many Requests (Suspension) or 503 Service Unavailable
+          const errorStr = (err.message || "") + (err.toString() || "");
+          const status = err.response ? err.response.status : null;
           
-          if (isRateLimited) {
-            // Render explicitly suspended the server (status 429). Stop and show error.
+          const isSuspendedError = status === 429 || errorStr.includes('429');
+          const isServiceUnavailable = status === 503 || errorStr.includes('503');
+          
+          if (isSuspendedError) {
+            // Render explicitly suspended the server (429). Stop and show error.
             setIsSuspended(true);
             console.warn("Server is suspended by host. Stopping automatic retries.");
             return;
           }
 
-          // Otherwise, it might be restarting (503, 504, or network error).
-          // Keep retrying quietly and don't trigger the "Service not available" state.
+          if (isServiceUnavailable || (errorStr.toLowerCase().includes('network error') && retryCount >= 2)) {
+            // Server is waking up, restarting, or having high latency issue.
+            // Show the error message but KEEP retrying because it starts eventually.
+            setIsSuspended(true);
+          }
+
+          // Trigger next attempt via retryCount after 3 seconds
           setTimeout(() => {
             if (isMounted) setRetryCount(prev => prev + 1);
           }, 3000);
@@ -55,7 +65,7 @@ export default function App() {
           !isServerReady && isFadingOut ? 'blur-0 scale-100 pointer-events-none' : ''
         }`}
       >
-        <Dashboard />
+        {isServerReady && <Dashboard />}
       </div>
 
       {!isServerReady && (
@@ -69,10 +79,10 @@ export default function App() {
             <div className="w-16 h-16 mb-6 relative flex items-center justify-center">
               {/* Outer spinning ring */}
               <div className="absolute inset-0 border-[3px] border-red-500/20 rounded-full"></div>
-              <div className="absolute inset-0 border-[3px] border-red-500 rounded-full border-t-transparent animate-spin"></div>
+              <div className={`absolute inset-0 border-[3px] border-red-500 rounded-full border-t-transparent ${isSuspended ? '' : 'animate-spin'}`}></div>
               
               {/* Center icon */}
-              <div className="text-red-500 relative z-10 animate-pulse">
+              <div className={`text-red-500 relative z-10 ${isSuspended ? '' : 'animate-pulse'}`}>
                 <svg 
                   className="w-7 h-7" 
                   fill="none" 
