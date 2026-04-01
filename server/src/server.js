@@ -8,10 +8,20 @@ import './config/db.js';
 import pool from './config/db.js';
 import { emergencyGenerator } from "./controller/emergency.controller.js";
 import { moveAmbulance } from "./controller/movement.controller.js";
+import path from "path";
+import log from "./utils/logger.js";
+
 const app = express();
-const port = process.env.PORT||5000;
+const port = process.env.PORT || 5000;
+
 app.use(cors());
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  log(`${req.method} ${req.url}`);
+  next();
+});
 
 
 app.get("/", (req, res) => {
@@ -26,7 +36,7 @@ app.get("/ambulances", async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    log(`Failed to fetch ambulances: ${err.message}`, "ERROR");
     res.status(500).json({ error: "Failed to fetch ambulances" });
   }
 });
@@ -39,7 +49,7 @@ app.get("/emergencies", async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    log(`Failed to fetch emergencies: ${err.message}`, "ERROR");
     res.status(500).json({ error: "Failed to fetch emergencies" });
   }
 });
@@ -52,7 +62,7 @@ app.get("/assignments", async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    log(`Failed to fetch assignments: ${err.message}`, "ERROR");
     res.status(500).json({ error: "Failed to fetch assignments" });
   }
 });
@@ -78,7 +88,7 @@ app.get('/route', async (req, res) => {
     }
     return res.status(404).json({ error: 'No route found' });
   } catch (err) {
-    console.error('Route proxy error:', err.message);
+    log(`Route proxy error: ${err.message}`, "ERROR");
     return res.status(500).json({ error: 'Route proxy failed' });
   }
 });
@@ -119,17 +129,17 @@ async function resetStuckAmbulances() {
 
     const total = busyFixed + ambFixed + emFixed;
     if (total > 0) {
-      console.log(`Startup cleanup: freed ${busyFixed} BUSY, ${ambFixed} orphan ambulances, re-queued ${emFixed} orphan emergencies`);
+      log(`Startup cleanup: freed ${busyFixed} BUSY, ${ambFixed} orphan ambulances, re-queued ${emFixed} orphan emergencies`);
     } else {
-      console.log('Startup cleanup: DB state is clean');
+      log('Startup cleanup: DB state is clean');
     }
   } catch (err) {
-    console.error('Startup cleanup error:', err);
+    log(`Startup cleanup error: ${err.message}`, "ERROR");
   }
 }
 
 app.listen(port, "0.0.0.0", async () => {
-  console.log(`Server Running at port ${port}`);
+  log(`Server Running at port ${port}`);
   await resetStuckAmbulances(); // clear any DB leftovers before movement starts
   setInterval(moveAmbulance, 1000); // start movement loop only after cleanup
 });

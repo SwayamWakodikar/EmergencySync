@@ -1,5 +1,6 @@
 import pool from '../config/db.js';
 import { assignNextEmergency } from '../services/dispatch.services.js';
+import log from '../utils/logger.js';
 
 const CITY_WAYPOINTS = [
   { lat: 18.5317, lng: 73.8469 }, // Shivajinagar
@@ -41,7 +42,7 @@ async function getRoute(lat1, lng1, lat2, lng2) {
       return data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
     }
   } catch (err) {
-    console.error('OSRM route fetch failed:', err.message);
+    log(`OSRM route fetch failed: ${err.message}`, "ERROR");
   }
   return null;
 }
@@ -113,9 +114,9 @@ async function completeAssignment(ambulanceId, emergencyId) {
       [ambulanceId]
     );
 
-    console.log(`Complete: Ambulance ${ambulanceId} freed, Emergency ${emergencyId} resolved`);
+    log(`Complete: Ambulance ${ambulanceId} freed, Emergency ${emergencyId} resolved`);
   } catch (err) {
-    console.error('completeAssignment error:', err);
+    log(`completeAssignment error: ${err.message}`, "ERROR");
   }
 }
 
@@ -145,7 +146,7 @@ export async function moveAmbulance() {
     if (orphans.length > 0) {
       const ids = orphans.map(r => r.id);
       ids.forEach(id => ambulanceState.delete(id));
-      console.log(`Orphan sweep: freed ambulance(s) ${ids.join(', ')} — will be re-dispatched`);
+      log(`Orphan sweep: freed ambulance(s) ${ids.join(', ')} — will be re-dispatched`);
     }
 
     const solvingIds = new Set(
@@ -217,7 +218,7 @@ export async function moveAmbulance() {
           emergencyId: amb.emergency_id,
           solveAt:     now + solveDelay,
         });
-        console.log(`Ambulance ${amb.id} on-scene at Emergency ${amb.emergency_id}, solving`);
+        log(`Ambulance ${amb.id} on-scene at Emergency ${amb.emergency_id}, solving`);
       } else {
         let state = ambulanceState.get(amb.id);
         if (!state || state.phase !== 'TRAVEL' || state.emergencyId !== amb.emergency_id) {
@@ -277,17 +278,17 @@ export async function moveAmbulance() {
       for (let i = 0; i < pairs; i++) {
         await assignNextEmergency();
       }
-      console.log(`Dispatched ${pairs} ambulance(s) to waiting emergencies`);
+      log(`Dispatched ${pairs} ambulance(s) to waiting emergencies`);
     }
 
     const patrolCount  = freeAmbs.length;
     const travelCount  = assignedAmbs.filter(a => !solvingIds.has(a.id)).length;
     const solvingCount = solvingIds.size;
     if (patrolCount + travelCount + solvingCount > 0) {
-      console.log(`Ambulances — Patrolling: ${patrolCount}, Responding: ${travelCount}, On-scene: ${solvingCount}`);
+      log(`Ambulances — Patrolling: ${patrolCount}, Responding: ${travelCount}, On-scene: ${solvingCount}`);
     }
 
   } catch (err) {
-    console.error('moveAmbulance error:', err);
+    log(`moveAmbulance error: ${err.message}`, "ERROR");
   }
 }

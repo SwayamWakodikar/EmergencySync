@@ -1,5 +1,5 @@
-// import prisma from '../prisma.js'
 import pool from '../config/db.js';
+import log from '../utils/logger.js';
 // completion is now handled by movement.controller.js (arrival-based, not timer-based)
 // simple distance calculation (good enough for city scale)
 function distance(a, b) {
@@ -19,7 +19,7 @@ export async function assignment(emergencyId) {
     const { rows: emergencies } = await client.query('SELECT id, latitude as lat, longitude as lng, status FROM emergencies WHERE id = $1', [emergencyId]);
     const emergency = emergencies[0];
 
-    console.log(" assignEmergency called with ID:", emergencyId)
+    log(`assignEmergency called with ID: ${emergencyId}`);
 
     if (!emergency || emergency.status !== 'WAITING') {
       await client.query('ROLLBACK');
@@ -76,12 +76,12 @@ export async function assignment(emergencyId) {
     await client.query('COMMIT');
 
     // movement.controller.js will detect arrival and handle COMPLETED transition
-    console.log(`Assigned ambulance ${nearest.id} -> emergency ${emergency.id}`)
+    log(`Assigned ambulance ${nearest.id} -> emergency ${emergency.id}`);
     // await assignNextEmergency();
     return assignment;
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error(err);
+    log(`assignment error: ${err.message}`, "ERROR");
     throw err;
   } finally {
     client.release();

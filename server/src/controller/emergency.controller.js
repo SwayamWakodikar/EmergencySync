@@ -1,6 +1,6 @@
-// import prisma from "../prisma.js"
 import pool from '../config/db.js';
-import { assignment } from "./assignment.controller.js"
+import { assignment } from "./assignment.controller.js";
+import log from '../utils/logger.js';
 
 const LAT_MIN = 18.45
 const LAT_MAX = 18.65
@@ -28,10 +28,10 @@ async function predictSeverity(description) {
     });
     if (!response.ok) throw new Error(`ML service responded with ${response.status}`);
     const data = await response.json();
-    console.log(`🧠 ML predicted severity ${data.predicted_severity} for: "${description.slice(0, 50)}..."`);
+    log(`🧠 ML predicted severity ${data.predicted_severity} for: "${description.slice(0, 50)}..."`);
     return data.predicted_severity;
   } catch (err) {
-    console.warn(`⚠️  ML service unavailable, using random severity. Reason: ${err.message}`);
+    log(`⚠️  ML service unavailable, using random severity. Reason: ${err.message}`, "WARN");
     return Math.floor(Math.random() * 5) + 1;
   }
 }
@@ -66,10 +66,10 @@ export async function emergencyGenerator(req, res) {
 
     await assignment(emergencyId);
 
-    console.log(`Emergency Created — ID: ${emergencyId}, Severity: ${severity}`);
+    log(`Emergency Created — ID: ${emergencyId}, Severity: ${severity}`);
     res.status(201).json({ success: true, id: emergencyId, severity });
   } catch (err) {
-    console.error(err);
+    log(`Failed to create emergency: ${err.message}`, "ERROR");
     res.status(500).json({ error: 'Failed to create emergency' });
   }
 }
