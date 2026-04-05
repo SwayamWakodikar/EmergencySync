@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import AmbulanceMarker from './AmbulanceMarker';
 import EmergencyMarker from './EmergencyMarker';
+import HeatmapLayer from './HeatmapLayer';
 import type { Ambulance, Emergency, Assignment } from '../services/api';
 
 interface Props {
@@ -72,6 +73,8 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
     });
   }, [activeLines, ambulanceMap, emergencyMap, routesMap]);
 
+  const [showHeatmap, setShowHeatmap] = useState(false);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <MapContainer
@@ -84,6 +87,9 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
+
+        {/* Heatmap layer */}
+        <HeatmapLayer emergencies={emergencies} visible={showHeatmap} />
 
         {/* Ambulance markers */}
         {ambulances.map((amb) => (
@@ -118,6 +124,38 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
           );
         })}
       </MapContainer>
+
+      {/* Heatmap toggle button */}
+      <button
+        onClick={() => setShowHeatmap(h => !h)}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 13px',
+          borderRadius: '8px',
+          border: `1px solid ${showHeatmap ? '#ef4444' : '#222'}`,
+          background: showHeatmap ? 'rgba(239,68,68,0.15)' : '#111',
+          color: showHeatmap ? '#ef4444' : '#888',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'Inter, sans-serif',
+          cursor: 'pointer',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {/* Flame icon */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+        </svg>
+        {showHeatmap ? 'Heatmap On' : 'Heatmap'}
+      </button>
 
       {/* Map Overlay Legend */}
       <div
