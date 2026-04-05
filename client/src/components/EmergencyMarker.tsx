@@ -58,6 +58,9 @@ export default function EmergencyMarker({ emergency }: Props) {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', fontSize: 11 }}>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Type</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{emergency.type}</span>
+
             <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Status</span>
             <span style={{ color: cfg.color, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color }} />

@@ -11,13 +11,16 @@ export const assignNextEmergency = async () => {
             `);
     if (emergencyResult.rows.length === 0) return;
     const emergency = emergencyResult.rows[0];
+    let requiredType = 'AMBULANCE';
+    if (emergency.type === 'FIRE') requiredType = 'FIRE';
+    if (emergency.type === 'POLICE') requiredType = 'POLICE';
 
     const ambulanceResult = await pool.query(
       `SELECT * FROM ambulances
-                WHERE status = 'FREE'
+                WHERE status = 'FREE' AND type = $3
                 ORDER BY POWER(latitude - $1, 2) + POWER(longitude - $2, 2) ASC
                 LIMIT 1`,
-      [emergency.latitude, emergency.longitude],
+      [emergency.latitude, emergency.longitude, requiredType],
     );
     if (ambulanceResult.rows.length === 0) return;
     const ambulance = ambulanceResult.rows[0];

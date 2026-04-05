@@ -12,6 +12,7 @@ export interface Ambulance {
     latitude: number;
     longitude: number;
     status: 'FREE' | 'ASSIGNED';
+    type: 'AMBULANCE' | 'POLICE' | 'FIRE';
 }
 
 export interface Emergency {
@@ -21,6 +22,8 @@ export interface Emergency {
     status: 'WAITING' | 'ASSIGNED' | 'COMPLETED';
     severity: number;
     description?: string;
+    type: string;
+    action_plan?: string;
 }
 
 export interface Assignment {

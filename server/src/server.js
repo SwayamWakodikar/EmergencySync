@@ -32,7 +32,7 @@ app.get("/", (req, res) => {
 app.get("/ambulances", async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id, latitude, longitude, status FROM ambulances ORDER BY id"
+      "SELECT id, latitude, longitude, status, type FROM ambulances ORDER BY id"
     );
     res.json(rows);
   } catch (err) {
@@ -45,7 +45,7 @@ app.get("/ambulances", async (req, res) => {
 app.get("/emergencies", async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id, latitude, longitude, status, severity FROM emergencies ORDER BY created_at DESC"
+      "SELECT id, latitude, longitude, status, severity, description, type, action_plan FROM emergencies ORDER BY created_at DESC"
     );
     res.json(rows);
   } catch (err) {

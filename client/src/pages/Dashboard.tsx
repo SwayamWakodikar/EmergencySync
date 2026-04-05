@@ -61,78 +61,83 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
-      {/* ── Background Map ── */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <MapView
+    <div className="dashboard-layout">
+      {/* ── Left Command Panel ── */}
+      <aside className="dashboard-sidebar glass animate-fade-in-up" style={{ padding: '20px', borderRadius: 'var(--radius-lg)' }}>
+        {/* Brand & Connection */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '20px' }}>
+            <div style={{ 
+              width: 32, height: 32, borderRadius: '8px', 
+              background: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              color: '#000', flexShrink: 0
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div>
+              <h1 style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: '-0.01em' }}>EmergencySync</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? 'var(--success)' : 'var(--danger)' }} />
+                <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>{isConnected ? 'Live' : 'Offline'}</span>
+              </div>
+            </div>
+        </div>
+
+        <Sidebar
           ambulances={ambulances}
           emergencies={emergencies}
-          assignments={assignments}
+          onCreateEmergency={handleCreateEmergency}
+          isCreating={isCreating}
+          lastUpdated={lastUpdated}
+          isConnected={isConnected}
         />
-      </div>
+      </aside>
 
-      {/* ── Floating Top Layout ── */}
-      <div className="floating-layout">
+      {/* ── Main Operations Center ── */}
+      <main className="dashboard-main">
         
-        {/* Left Side: Brand & Dispatch Card */}
-        <div className="animate-fade-in-up left-sidebar">
-          {/* Brand & Connection Glass Card */}
-          <div className="glass" style={{ padding: '16px 20px', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px var(--accent-glow)' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </div>
-                <div>
-                  <h1 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>EmergencySync</h1>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? 'var(--success)' : 'var(--danger)', boxShadow: `0 0 6px ${isConnected ? 'var(--success)' : 'var(--danger)'}` }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isConnected ? 'var(--success)' : 'var(--danger)' }}>{isConnected ? 'LIVE SYSTEM' : 'OFFLINE'}</span>
-                  </div>
-                </div>
-             </div>
-          </div>
-
-          <Sidebar
-            ambulances={ambulances}
-            emergencies={emergencies}
-            onCreateEmergency={handleCreateEmergency}
-            isCreating={isCreating}
-            lastUpdated={lastUpdated}
-            isConnected={isConnected}
-          />
-        </div>
-
-        {/* Floating Center Stats */}
-        <div className="glass animate-fade-in-up center-stats" style={{ animationDelay: '0.1s' }}>
-           {[
-            { label: 'Free Responders', value: ambulances.length, color: 'var(--accent)' },
-            { label: 'Active Incidents', value: emergencies.filter((e) => e.status !== 'COMPLETED').length, color: 'var(--warning)' },
-            { label: 'Resolved Operations', value: emergencies.filter((e) => e.status === 'COMPLETED').length, color: 'var(--success)' },
+        {/* Top KPI Header */}
+        <header className="dashboard-header glass animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          {[
+            { label: 'Medics', value: ambulances.filter(a => a.status === 'FREE' && a.type === 'AMBULANCE').length, color: '#10b981' },
+            { label: 'Police', value: ambulances.filter(a => a.status === 'FREE' && a.type === 'POLICE').length, color: '#3b82f6' },
+            { label: 'Fire', value: ambulances.filter(a => a.status === 'FREE' && a.type === 'FIRE').length, color: '#ef4444' },
+            { label: 'Active', value: emergencies.filter((e) => e.status !== 'COMPLETED').length, color: '#f59e0b' },
+            { label: 'Resolved', value: emergencies.filter((e) => e.status === 'COMPLETED').length, color: '#555' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginTop: 4 }}>{label}</div>
+              <div style={{ fontSize: 24, fontWeight: 600, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+              <div style={{ fontSize: 10, color: '#555', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 500, marginTop: 4 }}>{label}</div>
             </div>
           ))}
-        </div>
+        </header>
 
-        {/* Right Side: Emergency Queue Card */}
-        <div className="animate-fade-in-up right-sidebar" style={{ animationDelay: '0.2s' }}>
-           <div className="glass right-sidebar-inner">
-             {/* Mobile Drag Pill */}
-             <div className="mobile-drag" />
-             <div style={{ padding: '0 24px', marginBottom: 20 }}>
-               <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)' }}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
-                 Live Incident Queue
-               </h2>
-             </div>
-             <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px', WebkitOverflowScrolling: 'touch' }}>
-                <EmergencyList emergencies={emergencies} />
-             </div>
-           </div>
+        {/* Split UI: Map & Feed */}
+        <div className="dashboard-content-split">
+          
+          <div className="dashboard-map-container glass animate-fade-in-up" style={{ animationDelay: '0.2s', padding: '4px' }}>
+            <MapView
+              ambulances={ambulances}
+              emergencies={emergencies}
+              assignments={assignments}
+            />
+          </div>
+
+          <div className="dashboard-queue-container glass animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            <div className="mobile-drag" />
+            <div style={{ padding: '0 24px', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--accent)' }}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                Live Incident Queue
+              </h2>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px', WebkitOverflowScrolling: 'touch' }}>
+               <EmergencyList emergencies={emergencies} />
+            </div>
+          </div>
+
         </div>
-      </div>
+      </main>
 
       {/* ── Notification Toast ── */}
       {notification && (

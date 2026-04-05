@@ -140,11 +140,12 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
           Live Map Legend
         </div>
         {[
-          { color: 'var(--accent)', label: 'Ambulance (Free)' },
-          { color: 'var(--warning)', label: 'Ambulance (Assigned)' },
-          { color: 'var(--danger)', label: 'Emergency (Waiting)' },
-          { color: 'var(--warning)', label: 'Emergency (Assigned)' },
+          { color: 'var(--accent)', label: 'Medical Responder' },
+          { color: '#3b82f6', label: 'Police Responder' },
+          { color: '#ef4444', label: 'Fire Responder' },
           { color: 'var(--success)', label: 'Emergency (Resolved)' },
+          { color: 'var(--warning)', label: 'Emergency (Assigned)' },
+          { color: 'var(--danger)', label: 'Emergency (Waiting)' },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 8px ${color}` }} />

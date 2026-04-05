@@ -16,7 +16,7 @@ export async function assignment(emergencyId) {
     /*
     const emergency = await tx.emergencyu.findUnique({ where: { id: emergencyId } })
     */
-    const { rows: emergencies } = await client.query('SELECT id, latitude as lat, longitude as lng, status FROM emergencies WHERE id = $1', [emergencyId]);
+    const { rows: emergencies } = await client.query('SELECT id, latitude as lat, longitude as lng, type, status FROM emergencies WHERE id = $1', [emergencyId]);
     const emergency = emergencies[0];
 
     log(`assignEmergency called with ID: ${emergencyId}`);
@@ -29,7 +29,11 @@ export async function assignment(emergencyId) {
     /*
     const ambulances = await tx.ambulance.findMany({ where: { status: 'FREE' } })
     */
-    const { rows: ambulances } = await client.query("SELECT id, latitude as lat, longitude as lng, status FROM ambulances WHERE status = 'FREE'");
+    let requiredType = 'AMBULANCE';
+    if (emergency.type === 'FIRE') requiredType = 'FIRE';
+    if (emergency.type === 'POLICE') requiredType = 'POLICE';
+
+    const { rows: ambulances } = await client.query("SELECT id, latitude as lat, longitude as lng, status FROM ambulances WHERE status = 'FREE' AND type = $1", [requiredType]);
 
     if (ambulances.length === 0) {
       await client.query('ROLLBACK');
