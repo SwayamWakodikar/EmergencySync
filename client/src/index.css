@@ -79,8 +79,8 @@ html, body, #root {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulseRing {
-  0%   { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0%   { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.8); opacity: 0; }
 }
 
 .animate-fade-in-up { animation: fadeInUp 0.3s ease forwards; }
@@ -216,7 +216,7 @@ html, body, #root {
 .user-pulse-ring::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: 4px;
   border-radius: 50%;
   border: 2px solid #f59e0b;
   animation: pulseRing 1.5s ease-out infinite;

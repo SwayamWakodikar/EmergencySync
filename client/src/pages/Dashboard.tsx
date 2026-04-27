@@ -224,7 +224,7 @@ export default function Dashboard() {
         <div style={{
           maxHeight: cardCollapsed ? 0 : 800,
           opacity: cardCollapsed ? 0 : 1,
-          overflow: 'hidden',
+          overflow: cardCollapsed ? 'hidden' : 'visible',
           transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>

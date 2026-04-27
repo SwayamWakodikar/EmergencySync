@@ -169,6 +169,27 @@ export async function moveAmbulance() {
       log(`Orphan sweep: freed ambulance(s) ${ids.join(', ')} — will be re-dispatched`);
     }
 
+    // ── Retry WAITING emergencies that weren't assigned (vehicles were busy) ──
+    const { rows: waitingEmergencies } = await pool.query(
+      `SELECT id, types_needed FROM emergencies WHERE status = 'WAITING' ORDER BY created_at ASC`
+    );
+    if (waitingEmergencies.length > 0) {
+      const { assignment } = await import('./assignment.controller.js');
+      for (const em of waitingEmergencies) {
+        let typesNeeded;
+        try { typesNeeded = typeof em.types_needed === 'string' ? JSON.parse(em.types_needed) : em.types_needed; }
+        catch { typesNeeded = ['MEDICAL']; }
+        try {
+          const result = await assignment(em.id, typesNeeded || ['MEDICAL']);
+          if (result && result.length > 0) {
+            log(`🔄 Retry dispatch succeeded: Emergency #${em.id} → ${result.map(v => `${v.type}#${v.id}`).join(', ')}`);
+          }
+        } catch (err) {
+          log(`Retry dispatch failed for Emergency #${em.id}: ${err.message}`, "WARN");
+        }
+      }
+    }
+
     const solvingIds = new Set(
       [...ambulanceState.entries()]
         .filter(([, s]) => s.phase === 'SOLVING')
