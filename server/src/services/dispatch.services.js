@@ -1,5 +1,13 @@
 import pool from "../config/db.js";
+import log from "../utils/logger.js";
 // completion is now triggered by movement.controller.js after physical arrival
+
+// Map emergency type to vehicle type
+function vehicleTypeFor(emergencyType) {
+  if (emergencyType === 'FIRE') return 'FIRE';
+  if (emergencyType === 'POLICE') return 'POLICE';
+  return 'AMBULANCE'; // MEDICAL -> AMBULANCE
+}
 
 export const assignNextEmergency = async () => {
   try {
@@ -11,55 +19,88 @@ export const assignNextEmergency = async () => {
             `);
     if (emergencyResult.rows.length === 0) return;
     const emergency = emergencyResult.rows[0];
-    let requiredType = 'AMBULANCE';
-    if (emergency.type === 'FIRE') requiredType = 'FIRE';
-    if (emergency.type === 'POLICE') requiredType = 'POLICE';
 
-    const ambulanceResult = await pool.query(
-      `SELECT * FROM ambulances
-                WHERE status = 'FREE' AND type = $3
-                ORDER BY POWER(latitude - $1, 2) + POWER(longitude - $2, 2) ASC
-                LIMIT 1`,
-      [emergency.latitude, emergency.longitude, requiredType],
+    // Parse types_needed — supports multi-vehicle dispatch
+    let typesNeeded = [];
+    try {
+      typesNeeded = JSON.parse(emergency.types_needed || '[]');
+    } catch { /* ignore parse errors */ }
+    if (!Array.isArray(typesNeeded) || typesNeeded.length === 0) {
+      typesNeeded = [emergency.type || 'MEDICAL'];
+    }
+
+    // Check which types still need vehicles (some may already be assigned from partial earlier dispatch)
+    const { rows: existingAssignments } = await pool.query(
+      `SELECT a.type FROM assignments asn JOIN ambulances a ON asn.ambulance_id = a.id WHERE asn.emergency_id = $1`,
+      [emergency.id]
     );
-    if (ambulanceResult.rows.length === 0) return;
-    const ambulance = ambulanceResult.rows[0];
-    //starting transaction
+    const alreadyAssignedTypes = new Set(existingAssignments.map(r => {
+      // Map vehicle type back to emergency type for comparison
+      if (r.type === 'AMBULANCE') return 'MEDICAL';
+      return r.type;
+    }));
+    const remainingTypes = typesNeeded.filter(t => !alreadyAssignedTypes.has(t));
+
+    if (remainingTypes.length === 0) return; // All types already have vehicles
+
     const client = await pool.connect();
-    try{
-        await client.query(`BEGIN`);
-        //updating status for ambulance
-        await client.query(
-            `UPDATE ambulances SET status = 'ASSIGNED' WHERE id = $1`,
-            [ambulance.id]
-        )
-        //marking emergency assigned
-        await client.query(
-        `UPDATE emergencies 
-         SET status = 'ASSIGNED' 
-         WHERE id = $1`,
-        [emergency.id]
-      ) 
-      await client.query(
-        `INSERT INTO assignments (ambulance_id, emergency_id)
-         VALUES ($1, $2)`,
-        [ambulance.id, emergency.id]
-      )
+    let assignedAny = false;
 
-      await client.query(`COMMIT`)
+    try {
+      await client.query(`BEGIN`);
 
-      console.log(`Assigned Ambulance ${ambulance.id} -> Emergency ${emergency.id}`)
-      // movement.controller.js detects arrival and calls completeAssignment()
-    }
-    catch(err){
-        console.log("Error in updating data ",err);
-        await client.query(`ROLLBACK`)
-    }
-    finally{
-        if (client) client.release();
+      for (const emergencyType of remainingTypes) {
+        const requiredVehicleType = vehicleTypeFor(emergencyType);
+
+        const ambulanceResult = await client.query(
+          `SELECT * FROM ambulances
+                    WHERE status = 'FREE' AND type = $3
+                    ORDER BY POWER(latitude - $1, 2) + POWER(longitude - $2, 2) ASC
+                    LIMIT 1`,
+          [emergency.latitude, emergency.longitude, requiredVehicleType],
+        );
+        if (ambulanceResult.rows.length === 0) {
+          log(`  ⚠️  No free ${requiredVehicleType} for re-dispatch to Emergency ${emergency.id}`, "WARN");
+          continue; // Skip — try other types
+        }
+        const ambulance = ambulanceResult.rows[0];
+
+        // Update vehicle status
+        await client.query(
+          `UPDATE ambulances SET status = 'ASSIGNED' WHERE id = $1`,
+          [ambulance.id]
+        );
+
+        // Create assignment
+        await client.query(
+          `INSERT INTO assignments (ambulance_id, emergency_id)
+           VALUES ($1, $2)`,
+          [ambulance.id, emergency.id]
+        );
+
+        log(`  → Re-dispatched ${requiredVehicleType} #${ambulance.id} → Emergency ${emergency.id}`);
+        assignedAny = true;
+      }
+
+      if (assignedAny) {
+        // Mark emergency as ASSIGNED
+        await client.query(
+          `UPDATE emergencies 
+           SET status = 'ASSIGNED' 
+           WHERE id = $1`,
+          [emergency.id]
+        );
+      }
+
+      await client.query(`COMMIT`);
+    } catch (err) {
+      log(`Error in dispatch update: ${err.message}`, "ERROR");
+      await client.query(`ROLLBACK`);
+    } finally {
+      if (client) client.release();
     }
 
   } catch (err) {
-    console.log("Error is thrown Check once =>", err);
+    log(`Error in assignNextEmergency: ${err.message}`, "ERROR");
   }
 };

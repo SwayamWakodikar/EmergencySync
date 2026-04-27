@@ -45,9 +45,14 @@ app.get("/ambulances", async (req, res) => {
 app.get("/emergencies", async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT id, latitude, longitude, status, severity, description, type, action_plan FROM emergencies ORDER BY created_at DESC"
+      "SELECT id, latitude, longitude, status, severity, description, type, types_needed, action_plan FROM emergencies ORDER BY created_at DESC"
     );
-    res.json(rows);
+    // Parse types_needed from JSON string to array
+    const parsed = rows.map(r => ({
+      ...r,
+      types_needed: (() => { try { return JSON.parse(r.types_needed || '[]'); } catch { return [r.type || 'MEDICAL']; } })()
+    }));
+    res.json(parsed);
   } catch (err) {
     log(`Failed to fetch emergencies: ${err.message}`, "ERROR");
     res.status(500).json({ error: "Failed to fetch emergencies" });

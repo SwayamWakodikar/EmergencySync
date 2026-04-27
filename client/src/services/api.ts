@@ -23,6 +23,7 @@ export interface Emergency {
     severity: number;
     description?: string;
     type: string;
+    types_needed?: string[];
     action_plan?: string;
 }
 

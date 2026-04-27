@@ -29,6 +29,7 @@ async function initDB() {
         severity INT,
         description TEXT,
         type VARCHAR(20) DEFAULT 'MEDICAL',
+        types_needed TEXT DEFAULT '["MEDICAL"]',
         action_plan TEXT,
         status VARCHAR(20) DEFAULT 'WAITING',
         created_at TIMESTAMP DEFAULT NOW()
@@ -43,6 +44,7 @@ async function initDB() {
       -- Auto-migrate columns if they are missing
       ALTER TABLE ambulances ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'AMBULANCE';
       ALTER TABLE emergencies ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'MEDICAL';
+      ALTER TABLE emergencies ADD COLUMN IF NOT EXISTS types_needed TEXT DEFAULT '["MEDICAL"]';
       ALTER TABLE emergencies ADD COLUMN IF NOT EXISTS action_plan TEXT;
       
       -- Seed diverse responders if they are all default

@@ -253,7 +253,7 @@ export default function Sidebar({
             gap: 8,
             fontFamily: 'inherit',
             letterSpacing: '0.02em',
-            color: (isCreating || isLocating || !description.trim()) ? 'var(--text-muted)' : 'white',
+            cursor: (isCreating || isLocating || !description.trim()) ? 'not-allowed' : 'pointer',
           }}
         >
           {isCreating || isLocating ? (
@@ -262,7 +262,7 @@ export default function Sidebar({
               {isLocating ? 'Locating/Geocoding…' : 'Dispatching…'}
             </>
           ) : (
-            <>Dispatch Now</>
+            <>🚨 Dispatch Now</>
           )}
         </button>
         {!isCreating && !isLocating && (

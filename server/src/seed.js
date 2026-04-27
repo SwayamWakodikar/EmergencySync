@@ -12,24 +12,24 @@ function randomBetween(min, max) {
 }
 
 async function seedAmbulances() {
-  // await prisma.ambulance.deleteMany()
   await pool.query('DELETE FROM assignments');
   await pool.query('DELETE FROM emergencies');
   await pool.query('DELETE FROM ambulances');
 
-  const n = 10
-  for (let i = 0; i < n; i++) {
-    /*
-    await prisma.ambulance.create({
-      data: { lat: randomBetween(LAT_MIN, LAT_MAX), lng: randomBetween(LNG_MIN, LNG_MAX), status: 'FREE' },
-    })
-    */
+  // Balanced fleet: 5 ambulances, 3 fire trucks, 2 police vehicles
+  const fleet = [
+    'AMBULANCE', 'AMBULANCE', 'AMBULANCE', 'AMBULANCE', 'AMBULANCE',
+    'FIRE', 'FIRE', 'FIRE',
+    'POLICE', 'POLICE',
+  ];
+
+  for (let i = 0; i < fleet.length; i++) {
     await pool.query(
-      `INSERT INTO ambulances (latitude, longitude, status) VALUES ($1, $2, $3)`,
-      [randomBetween(LAT_MIN, LAT_MAX), randomBetween(LNG_MIN, LNG_MAX), 'FREE']
+      `INSERT INTO ambulances (latitude, longitude, status, type) VALUES ($1, $2, $3, $4)`,
+      [randomBetween(LAT_MIN, LAT_MAX), randomBetween(LNG_MIN, LNG_MAX), 'FREE', fleet[i]]
     );
   }
-  console.log(`added ${n} Ambulances correctly`)
+  console.log(`Seeded ${fleet.length} vehicles: 5 Ambulances, 3 Fire Trucks, 2 Police`)
 }
 
 seedAmbulances()

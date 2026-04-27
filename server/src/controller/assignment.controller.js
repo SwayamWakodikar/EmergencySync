@@ -8,81 +8,95 @@ function distance(a, b) {
   return Math.sqrt(dx * dx + dy * dy)
 }
 
-export async function assignment(emergencyId) {
+// Map emergency type to vehicle type
+function vehicleTypeFor(emergencyType) {
+  if (emergencyType === 'FIRE') return 'FIRE';
+  if (emergencyType === 'POLICE') return 'POLICE';
+  return 'AMBULANCE'; // MEDICAL -> AMBULANCE
+}
+
+export async function assignment(emergencyId, typesNeeded) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    /*
-    const emergency = await tx.emergencyu.findUnique({ where: { id: emergencyId } })
-    */
     const { rows: emergencies } = await client.query('SELECT id, latitude as lat, longitude as lng, type, status FROM emergencies WHERE id = $1', [emergencyId]);
     const emergency = emergencies[0];
 
-    log(`assignEmergency called with ID: ${emergencyId}`);
+    log(`assignEmergency called with ID: ${emergencyId}, types: [${(typesNeeded || []).join(', ')}]`);
 
     if (!emergency || emergency.status !== 'WAITING') {
       await client.query('ROLLBACK');
       return null
     }
 
-    /*
-    const ambulances = await tx.ambulance.findMany({ where: { status: 'FREE' } })
-    */
-    let requiredType = 'AMBULANCE';
-    if (emergency.type === 'FIRE') requiredType = 'FIRE';
-    if (emergency.type === 'POLICE') requiredType = 'POLICE';
-
-    const { rows: ambulances } = await client.query("SELECT id, latitude as lat, longitude as lng, status FROM ambulances WHERE status = 'FREE' AND type = $1", [requiredType]);
-
-    if (ambulances.length === 0) {
-      await client.query('ROLLBACK');
-      return null
+    // Fallback: if no typesNeeded provided, use the emergency's primary type
+    if (!typesNeeded || typesNeeded.length === 0) {
+      typesNeeded = [emergency.type || 'MEDICAL'];
     }
 
-    let nearest = ambulances[0]
-    let minDist = distance(nearest, emergency)
+    const assignedVehicles = [];
 
-    for (const amb of ambulances.slice(1)) {
-      const d = distance(amb, emergency)
-      if (d < minDist) {
-        minDist = d
-        nearest = amb
+    for (const emergencyType of typesNeeded) {
+      const vehicleType = vehicleTypeFor(emergencyType);
+
+      const { rows: vehicles } = await client.query(
+        "SELECT id, latitude as lat, longitude as lng, status FROM ambulances WHERE status = 'FREE' AND type = $1",
+        [vehicleType]
+      );
+
+      if (vehicles.length === 0) {
+        log(`⚠️  No free ${vehicleType} vehicle available for emergency ${emergencyId}`, "WARN");
+        continue; // Skip this type — other types can still be dispatched
       }
+
+      // Find nearest vehicle of this type
+      let nearest = vehicles[0];
+      let minDist = distance(nearest, emergency);
+
+      for (const veh of vehicles.slice(1)) {
+        const d = distance(veh, emergency);
+        if (d < minDist) {
+          minDist = d;
+          nearest = veh;
+        }
+      }
+
+      // Mark vehicle as ASSIGNED
+      await client.query(
+        'UPDATE ambulances SET status = $1 WHERE id = $2',
+        ['ASSIGNED', nearest.id]
+      );
+
+      // Create assignment record
+      await client.query(
+        `INSERT INTO assignments (ambulance_id, emergency_id, assigned_at)
+         VALUES ($1, $2, NOW())`,
+        [nearest.id, emergency.id]
+      );
+
+      assignedVehicles.push({ id: nearest.id, type: vehicleType });
+      log(`  → Dispatched ${vehicleType} #${nearest.id} → Emergency ${emergencyId}`);
     }
 
-    /*
-    await tx.ambulance.update({ where: { id: nearest.id }, data: { status: 'ASSIGNED' } })
-    */
-    await client.query(
-      'UPDATE ambulances SET status = $1 WHERE id = $2',
-      ['ASSIGNED', nearest.id]
-    );
-
-    /*
-    await tx.emergencyu.update({ where: { id: emergency.id }, data: { status: 'ASSIGNED' } })
-    */
-    await client.query(
-      'UPDATE emergencies SET status = $1 WHERE id = $2',
-      ['ASSIGNED', emergency.id]
-    );
-
-    /*
-    const assignment = await tx.assignment.create({ data: { ambulanceId: nearest.id, emergencyId: emergency.id } })
-    */
-    const { rows: assignmentRows } = await client.query(
-      `INSERT INTO assignments (ambulance_id, emergency_id, assigned_at)
-       VALUES ($1, $2, NOW()) RETURNING *`,
-      [nearest.id, emergency.id]
-    );
-    const assignment = assignmentRows[0];
+    if (assignedVehicles.length > 0) {
+      // Mark emergency as ASSIGNED
+      await client.query(
+        'UPDATE emergencies SET status = $1 WHERE id = $2',
+        ['ASSIGNED', emergency.id]
+      );
+    }
 
     await client.query('COMMIT');
 
+    if (assignedVehicles.length > 0) {
+      log(`🚨 Multi-dispatch complete: ${assignedVehicles.map(v => `${v.type}#${v.id}`).join(', ')} → Emergency ${emergencyId}`);
+    } else {
+      log(`⚠️  No vehicles could be assigned to Emergency ${emergencyId}`, "WARN");
+    }
+
     // movement.controller.js will detect arrival and handle COMPLETED transition
-    log(`Assigned ambulance ${nearest.id} -> emergency ${emergency.id}`);
-    // await assignNextEmergency();
-    return assignment;
+    return assignedVehicles;
   } catch (err) {
     await client.query('ROLLBACK');
     log(`assignment error: ${err.message}`, "ERROR");

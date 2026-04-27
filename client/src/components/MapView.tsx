@@ -58,17 +58,17 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         // Mark as 'fetching' to prevent duplicate requests
         setRoutesMap((prev) => ({ ...prev, [a.id]: [] }));
 
-        // Use our backend proxy to avoid CORS issues in production
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const url = `${BASE_URL}/route?fromLat=${amb.latitude}&fromLng=${amb.longitude}&toLat=${em.latitude}&toLng=${em.longitude}`;
+        // Fetch directly from OSRM to avoid backend IP rate-limiting which causes straight lines
+        const url = `https://router.project-osrm.org/route/v1/driving/${amb.longitude},${amb.latitude};${em.longitude},${em.latitude}?overview=full&geometries=geojson`;
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
-            if (data.coords && data.coords.length > 0) {
-              setRoutesMap((prev) => ({ ...prev, [a.id]: data.coords }));
+            if (data.routes && data.routes.length > 0) {
+              const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]] as [number, number]);
+              setRoutesMap((prev) => ({ ...prev, [a.id]: coords }));
             }
           })
-          .catch((err) => console.error('Route proxy error:', err));
+          .catch((err) => console.error('OSRM route error:', err));
       }
     });
   }, [activeLines, ambulanceMap, emergencyMap, routesMap]);
@@ -157,43 +157,37 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         {showHeatmap ? 'Heatmap On' : 'Heatmap'}
       </button>
 
-      {/* Map Overlay Legend */}
+      {/* Compact Legend */}
       <div
-        className="glass hidden md:flex"
         style={{
           position: 'absolute',
-          bottom: 32,
-          left: 24,
-          zIndex: 1000,
-          borderRadius: 'var(--radius)',
-          padding: '12px 16px',
+          bottom: 16,
+          left: 16,
+          zIndex: 900,
+          borderRadius: 10,
+          padding: '10px 14px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          minWidth: 180,
-          boxShadow: 'var(--shadow)',
+          gap: 16,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          fontSize: 10,
+          fontWeight: 600,
+          color: '#aaa',
+          letterSpacing: '0.02em',
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-          Live Map Legend
-        </div>
         {[
-          { color: 'var(--accent)', label: 'Medical Responder' },
-          { color: '#3b82f6', label: 'Police Responder' },
-          { color: '#ef4444', label: 'Fire Responder' },
-          { color: 'var(--success)', label: 'Emergency (Resolved)' },
-          { color: 'var(--warning)', label: 'Emergency (Assigned)' },
-          { color: 'var(--danger)', label: 'Emergency (Waiting)' },
+          { color: '#4f46e5', label: 'Medic' },
+          { color: '#3b82f6', label: 'Police' },
+          { color: '#ef4444', label: 'Fire' },
+          { color: '#f59e0b', label: 'Incident' },
         ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 8px ${color}` }} />
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
             {label}
           </div>
         ))}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, marginTop: 4 }}>
-          <div style={{ width: 14, height: 3, background: 'var(--warning)', flexShrink: 0 }} />
-          Dispatch Route
-        </div>
       </div>
     </div>
   );

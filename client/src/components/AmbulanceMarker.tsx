@@ -1,6 +1,10 @@
+import { useRef, useEffect, useMemo } from 'react';
 import { Marker, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import type { Ambulance } from '../services/api';
+
+// ── Must match POLL_INTERVAL in Dashboard.tsx ──
+const LERP_DURATION = 1500;
 
 interface Props {
   ambulance: Ambulance;
@@ -32,8 +36,21 @@ function createAmbulanceIcon(status: string, type: string) {
     ? `<path d="M13 14l5-3 5 3v4c0 3-5 5-5 5s-5-2-5-5v-4z" stroke="white" stroke-width="2" fill="none" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"/>`
     : `<path d="M18 14v8M14 18h8" stroke="white" stroke-width="2.5" stroke-linecap="round" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))"/>`;
 
+  // Animated pulse ring when ASSIGNED (responding to emergency)
+  const pulseRing = status === 'ASSIGNED'
+    ? `<circle cx="18" cy="18" r="14" fill="none" stroke="${colorHex}" stroke-width="2" opacity="0.6">
+         <animate attributeName="r" values="14;22" dur="1s" repeatCount="indefinite"/>
+         <animate attributeName="opacity" values="0.6;0" dur="1s" repeatCount="indefinite"/>
+       </circle>
+       <circle cx="18" cy="18" r="14" fill="none" stroke="${colorHex}" stroke-width="1" opacity="0.3">
+         <animate attributeName="r" values="14;26" dur="1.4s" repeatCount="indefinite"/>
+         <animate attributeName="opacity" values="0.3;0" dur="1.4s" repeatCount="indefinite"/>
+       </circle>`
+    : '';
+
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+      ${pulseRing}
       <circle cx="18" cy="18" r="14" fill="${colorHex}" fill-opacity="0.15" stroke="${colorHex}" stroke-width="1.5"/>
       <circle cx="18" cy="18" r="9" fill="${colorHex}" stroke="white" stroke-width="2" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"/>
       ${innerIcon}
@@ -49,12 +66,80 @@ function createAmbulanceIcon(status: string, type: string) {
 }
 
 export default function AmbulanceMarker({ ambulance }: Props) {
-  const icon = createAmbulanceIcon(ambulance.status, ambulance.type);
+  const icon = useMemo(
+    () => createAmbulanceIcon(ambulance.status, ambulance.type),
+    [ambulance.status, ambulance.type]
+  );
   const { color } = statusColor(ambulance.status, ambulance.type);
+
+  // ── Smooth 60fps interpolation via requestAnimationFrame ──
+  const markerRef = useRef<L.Marker>(null);
+  const targetPos = useRef<[number, number]>([ambulance.latitude, ambulance.longitude]);
+  const startPos = useRef<[number, number]>([ambulance.latitude, ambulance.longitude]);
+  const animRef = useRef<number>(0);
+  const startTime = useRef<number>(0);
+  const initialized = useRef(false);
+
+  // Frozen position — never mutated, prevents react-leaflet from snapping the marker
+  const frozenPos = useRef<[number, number]>([ambulance.latitude, ambulance.longitude]);
+
+  useEffect(() => {
+    const newLat = ambulance.latitude;
+    const newLng = ambulance.longitude;
+
+    // First render — snap immediately, no animation
+    if (!initialized.current) {
+      initialized.current = true;
+      targetPos.current = [newLat, newLng];
+      startPos.current = [newLat, newLng];
+      return;
+    }
+
+    // No movement — skip
+    if (newLat === targetPos.current[0] && newLng === targetPos.current[1]) {
+      return;
+    }
+
+    // Cancel any in-flight animation
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+
+    // Lerp from wherever the marker currently is → new target
+    const currentLatLng = markerRef.current?.getLatLng();
+    startPos.current = currentLatLng
+      ? [currentLatLng.lat, currentLatLng.lng]
+      : targetPos.current;
+    targetPos.current = [newLat, newLng];
+    startTime.current = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime.current;
+      const t = Math.min(elapsed / LERP_DURATION, 1);
+
+      // Ease-out cubic — natural deceleration
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      const lat = startPos.current[0] + (targetPos.current[0] - startPos.current[0]) * eased;
+      const lng = startPos.current[1] + (targetPos.current[1] - startPos.current[1]) * eased;
+
+      // Directly update Leaflet marker — zero React re-renders
+      markerRef.current?.setLatLng([lat, lng]);
+
+      if (t < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [ambulance.latitude, ambulance.longitude]);
 
   return (
     <Marker
-      position={[ambulance.latitude, ambulance.longitude]}
+      ref={markerRef}
+      position={frozenPos.current}
       icon={icon}
     >
       <Tooltip direction="top" offset={[0, -10]} permanent={false} className="custom-tooltip">

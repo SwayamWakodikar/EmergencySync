@@ -13,7 +13,7 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
-    "@google/genai": "latest",
+    "openai": "^4.73.0",
     "@prisma/client": "^7.4.0",
     "@prisma/extension-accelerate": "^3.0.1",
     "cors": "^2.8.6",
