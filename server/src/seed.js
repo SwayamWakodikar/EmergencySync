@@ -1,5 +1,4 @@
 import 'dotenv/config'
-// import prisma from './prisma.js'
 import pool from './config/db.js';
 
 const LAT_MIN = 18.45
@@ -12,6 +11,13 @@ function randomBetween(min, max) {
 }
 
 async function seedAmbulances() {
+  // Check if ambulances already seeded (skip re-seed on every restart)
+  const { rows } = await pool.query('SELECT COUNT(*) as count FROM ambulances');
+  if (parseInt(rows[0].count) >= 10) {
+    console.log('Ambulances already seeded, skipping.');
+    return;
+  }
+
   await pool.query('DELETE FROM assignments');
   await pool.query('DELETE FROM emergencies');
   await pool.query('DELETE FROM ambulances');
@@ -35,6 +41,5 @@ async function seedAmbulances() {
 seedAmbulances()
   .catch(console.error)
   .finally(async () => {
-    // await prisma.$disconnect()
     await pool.end();
   })

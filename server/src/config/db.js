@@ -3,13 +3,19 @@ const { Pool } = pg;
 import dotenv from 'dotenv';
 dotenv.config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'postgres',
-});
+// Support Render's DATABASE_URL (with SSL) or fall back to individual env vars for local dev
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }, // Required for Render managed Postgres
+    })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'postgres',
+    });
 
 // Automatically create the required tables if they don't exist
 async function initDB() {
@@ -51,7 +57,7 @@ async function initDB() {
       UPDATE ambulances SET type = 'POLICE' WHERE id % 3 = 1 AND type = 'AMBULANCE';
       UPDATE ambulances SET type = 'FIRE' WHERE id % 3 = 2 AND type = 'AMBULANCE';
     `);
-    console.log('Database tables initialized locally.');
+    console.log('Database tables initialized.');
   } catch (err) {
     console.error('Failed to initialize database tables:', err);
   }
