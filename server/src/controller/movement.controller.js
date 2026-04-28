@@ -330,6 +330,6 @@ export async function moveAmbulance() {
     }
 
   } catch (err) {
-    log(`moveAmbulance error: ${err.message}`, "ERROR");
+    log(`moveAmbulance error: ${err.stack || err}`, "ERROR");
   }
 }
