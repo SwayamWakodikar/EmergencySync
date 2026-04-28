@@ -46,6 +46,41 @@ export default function Dashboard() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  // Dragging state
+  const [cardPos, setCardPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    // Only drag from the handle, not inputs
+    if ((e.target as HTMLElement).closest('input, textarea, button')) return;
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX - cardPos.x,
+      y: e.clientY - cardPos.y
+    };
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setCardPos({
+        x: e.clientX - dragStart.current.x,
+        y: e.clientY - dragStart.current.y
+      });
+    };
+    const onMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging]);
+
   const showNotification = (msg: string, type: 'success' | 'error') => {
     setNotification({ msg, type });
     if (notifTimer.current) clearTimeout(notifTimer.current);
@@ -229,14 +264,24 @@ export default function Dashboard() {
       </div>
 
       {/* ── Bottom Card ── */}
-      <div className="user-bottom-card" style={cardCollapsed ? { padding: 0 } : undefined}>
+      <div 
+        className="user-bottom-card" 
+        onMouseDown={onMouseDown}
+        style={{ 
+          ...(cardCollapsed ? { padding: 0 } : {}),
+          transform: `translate(calc(-50% + ${cardPos.x}px), ${cardPos.y}px)`,
+          cursor: isDragging ? 'grabbing' : 'default',
+          userSelect: 'none',
+          transition: isDragging ? 'none' : 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, transform 0.1s ease',
+        }}
+      >
         {/* Collapse/Expand handle */}
         <div
           onClick={() => setCardCollapsed(c => !c)}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: cardCollapsed ? '12px 20px' : '4px 0 0',
-            cursor: 'pointer', userSelect: 'none',
+            cursor: isDragging ? 'grabbing' : 'pointer', userSelect: 'none',
           }}
         >
           {cardCollapsed ? (

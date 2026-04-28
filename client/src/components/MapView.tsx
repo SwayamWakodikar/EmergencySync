@@ -80,12 +80,16 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
       <MapContainer
         center={CITY_CENTER}
         zoom={ZOOM}
+        minZoom={11}
+        maxZoom={18}
+        maxBounds={[[18.3, 73.6], [18.8, 74.1]]}
+        maxBoundsViscosity={1.0}
         style={{ width: '100%', height: '100%' }}
-        zoomControl={false} /* we can rely on scroll or add custom zoom controls later */
+        zoomControl={false}
       >
-        {/* Dark map tiles from CartoDB */}
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          noWrap={true}
         />
 
         {/* Heatmap layer */}
