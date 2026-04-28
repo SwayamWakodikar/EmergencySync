@@ -3,6 +3,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* Default Dark Theme */
   --bg-base:       #000000;
   --bg-surface:    #0a0a0a;
   --bg-card:       #111111;
@@ -27,40 +28,64 @@
   --radius-lg:     12px;
   --shadow:        0 4px 24px rgba(0,0,0,0.6);
   --shadow-sm:     0 1px 8px rgba(0,0,0,0.4);
+
+  --map-filter:    invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+[data-theme='light'] {
+  --bg-base:       #f0f2f5;
+  --bg-surface:    #ffffff;
+  --bg-card:       #f8f9fa;
+  --bg-hover:      #e9ecef;
+  --border:        #e0e4e8;
+
+  --accent:        #1a1a1a;
+  --accent-soft:   rgba(0,0,0,0.05);
+
+  --text-primary:  #111827;
+  --text-secondary:#4b5563;
+  --text-muted:    #9ca3af;
+
+  --shadow:        0 4px 20px rgba(0,0,0,0.08);
+  --shadow-sm:     0 1px 4px rgba(0,0,0,0.05);
+
+  --map-filter:    none;
 }
 
 html, body, #root {
   height: 100%; width: 100%;
   overflow: hidden;
-  background: #000;
-  color: #fff;
+  background: var(--bg-base);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ══════ Leaflet ══════ */
-.leaflet-container { background: #000; }
+.leaflet-container { background: var(--bg-base); }
+.leaflet-tile-pane { filter: var(--map-filter); transition: filter 0.3s ease; }
 .leaflet-popup-content-wrapper {
-  background: #111 !important; color: #fff !important;
-  border: 1px solid #222 !important; border-radius: var(--radius) !important;
+  background: var(--bg-surface) !important; color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
   box-shadow: var(--shadow) !important;
 }
-.leaflet-popup-tip { display: none !important; }
+.leaflet-popup-tip { background: var(--bg-surface) !important; }
 .leaflet-popup-content { font-family: 'Inter', sans-serif !important; margin: 12px !important; }
-.leaflet-control-attribution { background: #0a0a0a !important; color: #444 !important; font-size: 10px !important; }
+.leaflet-control-attribution { background: var(--bg-surface) !important; color: var(--text-muted) !important; font-size: 10px !important; }
 
-/* Leaflet Tooltip — dark theme */
+/* Leaflet Tooltip — theme aware */
 .custom-tooltip {
-  background: #111 !important;
-  color: #fff !important;
-  border: 1px solid #222 !important;
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
   box-shadow: var(--shadow) !important;
   padding: 8px 10px !important;
@@ -95,7 +120,7 @@ html, body, #root {
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+  background: linear-gradient(to bottom, var(--bg-base) 0%, transparent 100%);
   pointer-events: auto;
 }
 
@@ -105,18 +130,14 @@ html, body, #root {
   bottom: 0; left: 0; right: 0;
   z-index: 1000;
   padding: 20px 20px 24px;
-  background: linear-gradient(to top,
-    rgba(0,0,0,0.97) 0%,
-    rgba(0,0,0,0.92) 60%,
-    rgba(0,0,0,0.7) 85%,
-    transparent 100%
-  );
+  background: var(--bg-surface);
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-width: 480px;
   margin: 0 auto;
   animation: fadeInUp 0.4s ease;
+  border-top: 1px solid var(--border);
 }
 
 @media (min-width: 768px) {
@@ -127,12 +148,12 @@ html, body, #root {
     transform: translateX(-50%);
     width: 420px;
     border-radius: 16px;
-    border: 1px solid #222;
-    background: rgba(10,10,10,0.95);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     padding: 24px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+    box-shadow: var(--shadow);
   }
 }
 
@@ -141,9 +162,9 @@ html, body, #root {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #222;
-  background: #111;
-  color: #fff;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 13px;
   font-family: inherit;
   line-height: 1.4;
@@ -151,11 +172,11 @@ html, body, #root {
   transition: all 0.2s ease;
 }
 .user-input:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
-  background: #0d0d0d;
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+  background: var(--bg-base);
 }
-.user-input::placeholder { color: #555; }
+.user-input::placeholder { color: var(--text-muted); }
 .user-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ══════ GPS Button ══════ */
@@ -163,16 +184,16 @@ html, body, #root {
   width: 44px;
   flex-shrink: 0;
   border-radius: 10px;
-  border: 1px solid #222;
-  background: #111;
-  color: #888;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.user-gps-btn:hover { background: #1a1a1a; color: #ef4444; border-color: #333; }
+.user-gps-btn:hover { background: var(--bg-hover); color: var(--danger); border-color: var(--text-muted); }
 .user-gps-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ══════ SOS Button ══════ */

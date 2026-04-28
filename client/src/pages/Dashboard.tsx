@@ -31,6 +31,21 @@ export default function Dashboard() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [cardCollapsed, setCardCollapsed] = useState(false);
 
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
   const showNotification = (msg: string, type: 'success' | 'error') => {
     setNotification({ msg, type });
     if (notifTimer.current) clearTimeout(notifTimer.current);
@@ -148,7 +163,7 @@ export default function Dashboard() {
   const isResolved = myEmergency?.status === 'COMPLETED';
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: '#000' }}>
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: 'var(--bg-base)' }}>
       {/* ── Full-screen Map ── */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <MapView ambulances={ambulances} emergencies={emergencies} assignments={assignments} />
@@ -157,26 +172,46 @@ export default function Dashboard() {
       {/* ── Top Bar ── */}
       <div className="user-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>EmergencySync</div>
-            <div style={{ fontSize: 10, color: '#888', fontWeight: 500 }}>Pune City Emergency Response</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>EmergencySync</div>
+            <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 500 }}>Pune City Emergency Response</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: isConnected ? '#10b981' : '#ef4444' }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: isConnected ? '#10b981' : '#ef4444' }}>{isConnected ? 'Connected' : 'Offline'}</span>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: isConnected ? 'var(--success)' : 'var(--danger)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: isConnected ? 'var(--success)' : 'var(--danger)' }}>{isConnected ? 'Connected' : 'Offline'}</span>
           </div>
+          
+          <button
+            onClick={toggleTheme}
+            style={{
+              width: 34, height: 34, borderRadius: 8,
+              border: `1px solid var(--border)`,
+              background: 'var(--bg-card)',
+              color: 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.2s ease',
+            }}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            )}
+          </button>
+
           <button
             onClick={() => setShowSidebar(s => !s)}
             style={{
               width: 34, height: 34, borderRadius: 8,
-              border: `1px solid ${showSidebar ? '#f59e0b' : '#333'}`,
-              background: showSidebar ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.05)',
-              color: showSidebar ? '#f59e0b' : '#888',
+              border: `1px solid ${showSidebar ? 'var(--warning)' : 'var(--border)'}`,
+              background: showSidebar ? 'var(--warning-soft)' : 'var(--bg-card)',
+              color: showSidebar ? 'var(--warning)' : 'var(--text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', transition: 'all 0.2s ease',
               position: 'relative',
@@ -185,7 +220,7 @@ export default function Dashboard() {
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
             {emergencies.filter(e => e.status !== 'COMPLETED').length > 0 && (
-              <div style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', background: '#ef4444', fontSize: 8, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', background: 'var(--danger)', fontSize: 8, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {emergencies.filter(e => e.status !== 'COMPLETED').length}
               </div>
             )}
@@ -206,9 +241,9 @@ export default function Dashboard() {
         >
           {cardCollapsed ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#888', flex: 1 }}>Report Emergency</span>
-              <div style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #333', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 16 }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', flex: 1 }}>Report Emergency</span>
+              <div style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 16 }}>
                 ▴
               </div>
             </div>
@@ -252,12 +287,12 @@ export default function Dashboard() {
             {/* Header + available responders */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--danger-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Report Emergency</div>
-                  <div style={{ fontSize: 11, color: '#666' }}>We'll dispatch help immediately</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Report Emergency</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>We'll dispatch help immediately</div>
                 </div>
               </div>
               {/* Available responders badge */}
@@ -299,13 +334,11 @@ export default function Dashboard() {
                   disabled={isCreating || isLocating}
                   style={{
                     flex: 1, padding: '8px 4px', borderRadius: 8,
-                    border: '1px solid #222', background: '#111',
-                    color: '#ccc', fontSize: 11, fontWeight: 600,
+                    border: '1px solid var(--border)', background: 'var(--bg-card)',
+                    color: 'var(--text-primary)', fontSize: 11, fontWeight: 600,
                     cursor: 'pointer', transition: 'all 0.15s ease',
                     fontFamily: 'inherit', textAlign: 'center',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.borderColor = '#333'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = '#222'; }}
                 >
                   {label}
                 </button>
@@ -327,7 +360,7 @@ export default function Dashboard() {
               <div style={{
                 position: 'absolute', bottom: 6, right: 10,
                 fontSize: 9, fontWeight: 600,
-                color: description.length >= 180 ? '#ef4444' : '#444',
+                color: description.length >= 180 ? 'var(--danger)' : 'var(--text-muted)',
               }}>
                 {description.length}/200
               </div>
@@ -369,16 +402,16 @@ export default function Dashboard() {
             </button>
 
             {/* ── Quick Dial Emergency Services ── */}
-            <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 10, marginTop: 2 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 2 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 Call Emergency Services
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                 {[
-                  { number: '112', label: 'All Emergency', color: '#ef4444', icon: '🆘' },
+                  { number: '112', label: 'All Emergency', color: 'var(--danger)', icon: '🆘' },
                   { number: '108', label: 'Ambulance', color: '#4f46e5', icon: '🚑' },
-                  { number: '101', label: 'Fire Brigade', color: '#f59e0b', icon: '🚒' },
+                  { number: '101', label: 'Fire Brigade', color: 'var(--warning)', icon: '🚒' },
                   { number: '100', label: 'Police', color: '#3b82f6', icon: '🚓' },
                 ].map(({ number, label, color, icon }) => (
                   <a
@@ -387,19 +420,16 @@ export default function Dashboard() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       padding: '9px 10px', borderRadius: 8,
-                      border: '1px solid #222', background: '#0d0d0d',
+                      border: '1px solid var(--border)', background: 'var(--bg-base)',
                       textDecoration: 'none', transition: 'all 0.15s ease',
                       cursor: 'pointer',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = `${color}08`; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.background = '#0d0d0d'; }}
                   >
                     <span style={{ fontSize: 16 }}>{icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{number}</div>
-                      <div style={{ fontSize: 9, fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
                     </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5, flexShrink: 0 }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   </a>
                 ))}
               </div>
@@ -426,7 +456,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>Emergency Resolved</div>
               <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>All units have completed their response.</div>
             </div>
-            <button onClick={() => { setMyEmergency(null); setMyEmergencyId(null); }} className="user-sos-btn" style={{ background: '#222', color: '#fff' }}>
+            <button onClick={() => { setMyEmergency(null); setMyEmergencyId(null); }} className="user-sos-btn" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
               Report New Emergency
             </button>
           </>
@@ -438,10 +468,10 @@ export default function Dashboard() {
                 <div style={{ width: 12, height: 12, borderRadius: '50%', background: myEmergency?.status === 'WAITING' ? '#ef4444' : '#f59e0b' }} />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
                   {myEmergency?.status === 'WAITING' ? 'Finding available units…' : 'Help is on the way!'}
                 </div>
-                <div style={{ fontSize: 11, color: '#888' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                   Incident #{myEmergency?.id} • {myEmergency?.type}
                 </div>
               </div>
@@ -449,7 +479,7 @@ export default function Dashboard() {
 
             {/* AI Action Plan */}
             {myEmergency?.action_plan && (
-              <div style={{ padding: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 8, borderLeft: '3px solid #f59e0b', marginBottom: 12, fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+              <div style={{ padding: 10, background: 'var(--bg-card)', borderRadius: 8, borderLeft: '3px solid var(--warning)', marginBottom: 12, fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}>
                 {myEmergency.action_plan}
               </div>
             )}
@@ -458,14 +488,14 @@ export default function Dashboard() {
             {myAssignedVehicles.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Dispatched Units</div>
-                {myAssignedVehicles.map(v => (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#111', borderRadius: 8, border: '1px solid #222' }}>
+                 {myAssignedVehicles.map(v => (
+                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <span style={{ fontSize: 20 }}>
                       {v.type === 'FIRE' ? '🚒' : v.type === 'POLICE' ? '🚓' : '🚑'}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{v.type === 'FIRE' ? 'Fire Truck' : v.type === 'POLICE' ? 'Police Unit' : 'Ambulance'} #{v.id}</div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: v.status === 'ASSIGNED' ? '#f59e0b' : '#10b981' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{v.type === 'FIRE' ? 'Fire Truck' : v.type === 'POLICE' ? 'Police Unit' : 'Ambulance'} #{v.id}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: v.status === 'ASSIGNED' ? 'var(--warning)' : 'var(--success)' }}>
                         {v.status === 'ASSIGNED' ? '● En Route' : '● Available'}
                       </div>
                     </div>
@@ -496,9 +526,9 @@ export default function Dashboard() {
           top: 0, right: 0, bottom: 0,
           width: 360,
           zIndex: 900,
-          background: 'rgba(8,8,8,0.95)',
+          background: 'var(--bg-surface)',
           backdropFilter: 'blur(20px)',
-          borderLeft: '1px solid #1a1a1a',
+          borderLeft: '1px solid var(--border)',
           transform: showSidebar ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
@@ -507,15 +537,15 @@ export default function Dashboard() {
         }}
       >
         {/* Sidebar header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, marginTop: 48 }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, marginTop: 48 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
               Incident Feed
             </div>
-            <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{emergencies.length} total • {emergencies.filter(e => e.status !== 'COMPLETED').length} active • {emergencies.filter(e => e.status === 'COMPLETED').length} resolved</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{emergencies.length} total • {emergencies.filter(e => e.status !== 'COMPLETED').length} active • {emergencies.filter(e => e.status === 'COMPLETED').length} resolved</div>
           </div>
-          <button onClick={() => setShowSidebar(false)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #222', background: '#111', color: '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>✕</button>
+          <button onClick={() => setShowSidebar(false)} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>✕</button>
         </div>
 
         {/* Incident list */}
@@ -530,32 +560,29 @@ export default function Dashboard() {
                   <span style={{ fontSize: 10, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{cfg.label}</span>
                   <span style={{ fontSize: 9, fontWeight: 800, color: cfg.color, background: `${cfg.color}15`, padding: '2px 8px', borderRadius: 99 }}>{items.length}</span>
                 </div>
-                {items.map(em => {
+                 {items.map(em => {
                   const sevLabels = ['', 'Minor', 'Moderate', 'Serious', 'Severe', 'Critical'];
                   return (
-                    <div key={em.id} style={{ padding: 12, background: '#111', borderRadius: 8, border: '1px solid #1a1a1a', marginBottom: 6, transition: 'border-color 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = cfg.color}
-                      onMouseLeave={e => e.currentTarget.style.borderColor = '#1a1a1a'}
-                    >
+                    <div key={em.id} style={{ padding: 12, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border)', marginBottom: 6, transition: 'border-color 0.15s' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color }} />
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Incident #{em.id}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>Incident #{em.id}</span>
                         </div>
                         <span style={{ fontSize: 9, fontWeight: 700, color: cfg.color, background: `${cfg.color}15`, padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>{em.type}</span>
                       </div>
                       {/* Severity bar */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: '#666', width: 50 }}>Severity</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', width: 50 }}>Severity</span>
                         <div style={{ display: 'flex', gap: 2 }}>
                           {[1,2,3,4,5].map(i => (
-                            <div key={i} style={{ width: 10, height: 4, borderRadius: 2, background: i <= em.severity ? (em.severity >= 4 ? '#ef4444' : em.severity === 3 ? '#f59e0b' : '#4f46e5') : '#222' }} />
+                            <div key={i} style={{ width: 10, height: 4, borderRadius: 2, background: i <= em.severity ? (em.severity >= 4 ? 'var(--danger)' : em.severity === 3 ? 'var(--warning)' : '#4f46e5') : 'var(--border)' }} />
                           ))}
                         </div>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: em.severity >= 4 ? '#ef4444' : '#aaa' }}>{sevLabels[em.severity]}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: em.severity >= 4 ? 'var(--danger)' : 'var(--text-muted)' }}>{sevLabels[em.severity]}</span>
                       </div>
-                      {em.description && <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, marginTop: 4, wordBreak: 'break-word' }}>{em.description}</div>}
-                      {em.action_plan && <div style={{ fontSize: 10, color: '#aaa', marginTop: 6, padding: '6px 8px', background: '#0d0d0d', borderRadius: 6, borderLeft: '2px solid #f59e0b', lineHeight: 1.4 }}>{em.action_plan}</div>}
+                      {em.description && <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4, marginTop: 4, wordBreak: 'break-word' }}>{em.description}</div>}
+                      {em.action_plan && <div style={{ fontSize: 10, color: 'var(--text-primary)', marginTop: 6, padding: '6px 8px', background: 'var(--bg-base)', borderRadius: 6, borderLeft: '2px solid var(--warning)', lineHeight: 1.4 }}>{em.action_plan}</div>}
                     </div>
                   );
                 })}
