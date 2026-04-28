@@ -4,7 +4,6 @@ const BASE_URL = 'https://emergencysync-3.onrender.com';
 
 const api = axios.create({
     baseURL: BASE_URL,
-    timeout: 8000,
 });
 
 export interface Ambulance {
