@@ -21,6 +21,13 @@ done
 
 echo "PostgreSQL is ready."
 
+# Ensure the database exists (ignore error if it already exists)
+echo "Creating databases if they don't exist..."
+su-exec postgres createdb emergencysync 2>/dev/null || true
+if [ -n "$DB_NAME" ] && [ "$DB_NAME" != "emergencysync" ]; then
+    su-exec postgres createdb "$DB_NAME" 2>/dev/null || true
+fi
+
 # Start the Node.js app
 echo "Starting Node.js server..."
 npm run render-start
