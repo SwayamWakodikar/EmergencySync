@@ -1,88 +1,160 @@
 # EmergencySync
 
-EmergencySync is a full-stack web application featuring a Node.js & Express backend, a PostgreSQL database, and a React frontend built with Vite and TypeScript.
+**EmergencySync** is a full-stack real-time emergency dispatch platform for Pune city. It uses **Google Gemini AI** to automatically triage incoming emergency reports — classifying them by type, severity, and generating actionable response plans — then dispatches the nearest appropriate unit across a live map.
 
-## 🏗️ Project Structure
+---
 
-The project is divided into two main parts:
+## ✨ Features
 
-- `client/` - Frontend application using React, Vite, and TypeScript.
-- `server/` - Backend API using Node.js, Express, Prisma, and PostgreSQL.
-- `docker-compose.yml` - Docker configuration to easily spin up the database and backend.
+### AI-Powered Triage (Gemini API)
+- Natural language emergency reports are analyzed by **Google Gemini** in real time
+- Automatically extracts: **severity** (1–5), **type** (MEDICAL / FIRE / POLICE), a concise **summary**, and an **AI action plan** for the responding unit
+- Graceful fallback if the API is unavailable
+
+### Multi-Agency Dispatch
+- Supports three responder types: **Ambulance** (medical), **Police**, and **Fire** units
+- Smart assignment logic — a fire incident only dispatches a Fire unit, a crime dispatches Police, etc.
+- Nearest available unit is selected via Euclidean distance calculation
+
+### Live Map Dashboard
+- Interactive **Leaflet.js** map showing all units and incidents in real time
+- Distinct icons and colors per unit type (teal = medical, blue = police, red = fire)
+- Animated dispatch **route polylines** (powered by OSRM routing, proxied through the backend)
+- Polls every 2.5 seconds — no page refresh needed
+
+### Incident Queue Feed
+- Live incident list grouped by status: **Waiting → Assigned → Resolved**
+- Each card shows: type, severity bar, AI-generated action plan, and description
+- Status badges with color coding (red / amber / green)
+
+### KPI Header
+- Real-time counts for: Free Medics, Free Police, Free Fire units, Active Incidents, Resolved
+
+---
+
+## 🏗️ Architecture
+
+```
+EmergencySync/
+├── client/                  # React + TypeScript + Vite frontend
+│   └── src/
+│       ├── pages/           # Dashboard (main page)
+│       ├── components/      # MapView, EmergencyList, Sidebar, Markers
+│       └── services/        # API client (axios)
+│
+├── server/                  # Node.js + Express backend
+│   └── src/
+│       ├── controller/      # emergency, assignment, movement controllers
+│       ├── services/        # dispatch service
+│       ├── config/          # PostgreSQL pool + DB init
+│       └── utils/           # logger
+│
+└── docker-compose.yml       # Spins up PostgreSQL
+```
+
+---
 
 ## 🚀 Tech Stack
 
-**Frontend:**
-- React (v19)
-- TypeScript
-- Vite
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite, Leaflet.js |
+| Backend | Node.js, Express |
+| Database | PostgreSQL (raw SQL via `pg` pool) |
+| AI | Google Gemini API (`@google/genai`) |
+| Routing | OSRM (OpenStreetMap) via backend proxy |
+| Containerization | Docker & Docker Compose |
 
-**Backend:**
-- Node.js
-- Express
-- Prisma (ORM)
-- PostgreSQL
+> **Note:** Prisma ORM has been removed. The project now uses direct `pg` pool queries with auto-migration on startup.
 
-**Containerization:**
-- Docker & Docker Compose
- 
+---
+
 ## 🛠️ Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) installed
-- [Docker desktop](https://www.docker.com/products/docker-desktop/) (optional, but highly recommended for the database)
+- [Node.js](https://nodejs.org/) v18+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for PostgreSQL)
+- A **Google Gemini API key** — get one free at [aistudio.google.com](https://aistudio.google.com)
 
 ### Installation
 
-1. Clone the repository to your local machine.
-2. Install dependencies for both the client and the server:
-
 ```bash
-# Install Server dependencies
-cd server
-npm install
+# 1. Clone the repo
+git clone https://github.com/SwayamWakodikar/EmergencySync.git
+cd EmergencySync
 
-# Install Client dependencies
-cd ../client
-npm install
+# 2. Install server dependencies
+cd server && npm install
+
+# 3. Install client dependencies
+cd ../client && npm install
 ```
 
-### Running the Application
+### Environment Variables
 
-There are multiple ways to run the project.
+Create `server/.env`:
 
-#### Option 1: Using Docker (Recommended)
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/emergencysync
+GEMINI_API_KEY=your_gemini_api_key_here
+PORT=5000
+```
 
-1. Ensure Docker Desktop is running.
-2. At the root of the project, run:
+### Running the App
+
+**Step 1 — Start the database:**
 ```bash
+# From project root
 docker-compose up -d
 ```
-This will start the PostgreSQL database and the backend server on port 5000.
 
-3. Navigate to the client directory and start the frontend development server:
-```bash
-cd client
-npm run dev
-```
-
-#### Option 2: Manual Setup
-
-If you prefer not to use Docker, you need a running PostgreSQL instance on your system.
-
-1. **Setup Environment:** In the `server` directory, create a `.env` file and configure your database connection string and any necessary environment variables.
-2. **Sync Database:** Run Prisma migrations (if applicable).
-3. **Start the Server:**
+**Step 2 — Start the backend:**
 ```bash
 cd server
 npm run dev
 ```
-4. **Start the Client:**
+The server auto-creates and migrates all database tables on startup. No manual migration needed.
+
+**Step 3 — Start the frontend:**
 ```bash
 cd client
 npm run dev
 ```
+
+Open **http://localhost:5173** — the dashboard is live.
+
+---
+
+## 🗄️ Database Schema
+
+| Table | Key Columns |
+|-------|-------------|
+| `ambulances` | `id`, `latitude`, `longitude`, `status` (FREE/ASSIGNED), `type` (AMBULANCE/POLICE/FIRE) |
+| `emergencies` | `id`, `latitude`, `longitude`, `severity`, `description`, `type`, `action_plan`, `status`, `created_at` |
+| `assignments` | `id`, `ambulance_id`, `emergency_id`, `assigned_at` |
+
+Schema is **auto-migrated** on every server start via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+
+---
+
+## 🤖 How AI Triage Works
+
+1. User submits a text description (e.g. *"Person collapsed at FC Road, not breathing"*)
+2. Backend sends the description to **Gemini** with a structured prompt
+3. Gemini returns a JSON object:
+   ```json
+   {
+     "severity": 5,
+     "type": "MEDICAL",
+     "summary": "Cardiac arrest at FC Road",
+     "action_plan": "Dispatch ALS unit immediately. Begin CPR instructions over phone."
+   }
+   ```
+4. The incident is stored with all fields and the nearest matching unit is dispatched
+5. The frontend displays everything live on the map and incident queue
+
+---
 
 ## 📜 License
 

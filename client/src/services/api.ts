@@ -1,10 +1,9 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BASE_URL = 'https://emergencysync-3.onrender.com';
 
 const api = axios.create({
     baseURL: BASE_URL,
-    timeout: 8000,
 });
 
 export interface Ambulance {
@@ -12,6 +11,7 @@ export interface Ambulance {
     latitude: number;
     longitude: number;
     status: 'FREE' | 'ASSIGNED';
+    type: 'AMBULANCE' | 'POLICE' | 'FIRE';
 }
 
 export interface Emergency {
@@ -21,6 +21,9 @@ export interface Emergency {
     status: 'WAITING' | 'ASSIGNED' | 'COMPLETED';
     severity: number;
     description?: string;
+    type: string;
+    types_needed?: string[];
+    action_plan?: string;
 }
 
 export interface Assignment {

@@ -143,8 +143,8 @@ export default function Sidebar({
               outline: 'none',
             }}
             onFocus={(e) => {
-               e.currentTarget.style.borderColor = '#ef4444';
-               e.currentTarget.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.15)';
+               e.currentTarget.style.borderColor = 'var(--accent-bright)';
+               e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.15)';
                e.currentTarget.style.background = 'var(--bg-card)';
             }}
             onBlur={(e) => {
@@ -239,38 +239,21 @@ export default function Sidebar({
           id="btn-create-emergency"
           onClick={handleDispatch}
           disabled={isCreating || isLocating || !description.trim()}
+          className={(isCreating || isLocating || !description.trim()) ? 'btn-dispatch-disabled' : 'btn-dispatch'}
           style={{
             width: '100%',
             padding: '11px 0',
             borderRadius: 'var(--radius)',
             border: 'none',
-            cursor: (isCreating || isLocating || !description.trim()) ? 'not-allowed' : 'pointer',
-            background: (isCreating || isLocating || !description.trim())
-              ? 'rgba(239,68,68,0.15)'
-              : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-            color: (isCreating || isLocating || !description.trim()) ? 'var(--text-muted)' : 'white',
             fontWeight: 700,
             fontSize: 14,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            boxShadow: (isCreating || isLocating || !description.trim()) ? 'none' : '0 4px 16px rgba(239,68,68,0.35)',
-            transition: 'all 0.2s ease',
             fontFamily: 'inherit',
             letterSpacing: '0.02em',
-          }}
-          onMouseEnter={(e) => {
-            if (!isCreating && !isLocating && description.trim()) {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(239,68,68,0.4)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-            if (!isCreating && !isLocating && description.trim()) {
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(239,68,68,0.35)';
-            }
+            cursor: (isCreating || isLocating || !description.trim()) ? 'not-allowed' : 'pointer',
           }}
         >
           {isCreating || isLocating ? (
@@ -279,7 +262,7 @@ export default function Sidebar({
               {isLocating ? 'Locating/Geocoding…' : 'Dispatching…'}
             </>
           ) : (
-            <>Dispatch Now</>
+            <>🚨 Dispatch Now</>
           )}
         </button>
         {!isCreating && !isLocating && (

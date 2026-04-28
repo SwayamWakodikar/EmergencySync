@@ -35,7 +35,9 @@ const SOLVE_MAX        = 3000;
 async function getRoute(lat1, lng1, lat2, lng2) {
   try {
     const url = `http://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'EmergencySyncBackend/1.0 (contact@example.com)' }
+    });
     if (!response.ok) return null;
     const data = await response.json();
     if (data.routes && data.routes.length > 0) {
@@ -96,11 +98,36 @@ function stepAlongPath(lat, lng, path, pathIndex, speed) {
 
 async function completeAssignment(ambulanceId, emergencyId) {
   try {
+    // Free this specific vehicle
     await pool.query(
-      `UPDATE emergencies SET status = 'COMPLETED' WHERE id = $1`,
+      `UPDATE ambulances SET status = 'FREE' WHERE id = $1`,
+      [ambulanceId]
+    );
+
+    log(`Vehicle ${ambulanceId} finished at Emergency ${emergencyId}`);
+
+    // Check if ALL vehicles assigned to this emergency are now free (none still ASSIGNED)
+    const { rows } = await pool.query(
+      `SELECT COUNT(*) AS still_active FROM assignments asn
+       JOIN ambulances a ON asn.ambulance_id = a.id
+       WHERE asn.emergency_id = $1 AND a.status = 'ASSIGNED'`,
       [emergencyId]
     );
 
+    const stillActive = parseInt(rows[0].still_active);
+
+    if (stillActive === 0) {
+      // All vehicles have completed — mark emergency as resolved
+      await pool.query(
+        `UPDATE emergencies SET status = 'COMPLETED' WHERE id = $1`,
+        [emergencyId]
+      );
+      log(`✅ All vehicles done — Emergency ${emergencyId} COMPLETED`);
+    } else {
+      log(`⏳ Emergency ${emergencyId}: ${stillActive} vehicle(s) still responding`);
+    }
+
+    // Reset any orphaned emergencies
     await pool.query(
       `UPDATE emergencies SET status = 'WAITING'
        WHERE status = 'ASSIGNED'
@@ -108,13 +135,6 @@ async function completeAssignment(ambulanceId, emergencyId) {
          AND id IN (SELECT emergency_id FROM assignments WHERE ambulance_id = $2)`,
       [emergencyId, ambulanceId]
     );
-
-    await pool.query(
-      `UPDATE ambulances SET status = 'FREE' WHERE id = $1`,
-      [ambulanceId]
-    );
-
-    log(`Complete: Ambulance ${ambulanceId} freed, Emergency ${emergencyId} resolved`);
   } catch (err) {
     log(`completeAssignment error: ${err.message}`, "ERROR");
   }
@@ -147,6 +167,27 @@ export async function moveAmbulance() {
       const ids = orphans.map(r => r.id);
       ids.forEach(id => ambulanceState.delete(id));
       log(`Orphan sweep: freed ambulance(s) ${ids.join(', ')} — will be re-dispatched`);
+    }
+
+    // ── Retry WAITING emergencies that weren't assigned (vehicles were busy) ──
+    const { rows: waitingEmergencies } = await pool.query(
+      `SELECT id, types_needed FROM emergencies WHERE status = 'WAITING' ORDER BY created_at ASC`
+    );
+    if (waitingEmergencies.length > 0) {
+      const { assignment } = await import('./assignment.controller.js');
+      for (const em of waitingEmergencies) {
+        let typesNeeded;
+        try { typesNeeded = typeof em.types_needed === 'string' ? JSON.parse(em.types_needed) : em.types_needed; }
+        catch { typesNeeded = ['MEDICAL']; }
+        try {
+          const result = await assignment(em.id, typesNeeded || ['MEDICAL']);
+          if (result && result.length > 0) {
+            log(`🔄 Retry dispatch succeeded: Emergency #${em.id} → ${result.map(v => `${v.type}#${v.id}`).join(', ')}`);
+          }
+        } catch (err) {
+          log(`Retry dispatch failed for Emergency #${em.id}: ${err.message}`, "WARN");
+        }
+      }
     }
 
     const solvingIds = new Set(
@@ -289,6 +330,6 @@ export async function moveAmbulance() {
     }
 
   } catch (err) {
-    log(`moveAmbulance error: ${err.message}`, "ERROR");
+    log(`moveAmbulance error: ${err.stack || err}`, "ERROR");
   }
 }

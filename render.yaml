@@ -1,0 +1,29 @@
+databases:
+  - name: emergencysync-db
+    plan: free
+    databaseName: emergencysync
+    region: oregon
+
+services:
+  - type: web
+    name: emergencysync-server
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm run render-start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: emergencysync-db
+          property: connectionString
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: ML_SERVICE_URL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        sync: false

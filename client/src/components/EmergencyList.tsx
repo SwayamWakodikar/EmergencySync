@@ -36,7 +36,7 @@ function SeverityBar({ level }: { level: number }) {
             borderRadius: 2,
             background: i <= level
               ? level >= 4 ? 'var(--danger)' : level === 3 ? 'var(--warning)' : 'var(--accent)'
-              : 'rgba(0,0,0,0.06)',
+              : 'var(--border)',
             transition: 'background 0.3s',
           }}
         />
@@ -51,35 +51,39 @@ function EmergencyItem({ emergency }: { emergency: Emergency }) {
     <div
       className="animate-fade-in-up"
       style={{
-        padding: '16px',
-        background: 'var(--bg-card)',
+        padding: '14px',
+        background: '#111',
         borderRadius: 'var(--radius)',
-        border: '1px solid var(--border)',
+        border: '1px solid #222',
         marginBottom: 8,
-        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-        cursor: 'pointer',
-        boxShadow: '0 2px 8px -2px rgba(0,0,0,0.02)',
+        transition: 'border-color 0.2s ease',
+        cursor: 'default',
       }}
       onMouseEnter={(e) => {
          e.currentTarget.style.borderColor = cfg.dotColor;
-         e.currentTarget.style.boxShadow = `0 8px 24px -6px ${cfg.dotColor.replace('var(', '').replace(')', '-soft)')}`;
-         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
          e.currentTarget.style.borderColor = 'var(--border)';
-         e.currentTarget.style.boxShadow = '0 2px 8px -2px rgba(0,0,0,0.02)';
-         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
       <div className="flex items-center justify-between mb-3">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dotColor, boxShadow: `0 0 6px ${cfg.dotColor}` }} />
-          <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>
-            ID #{emergency.id}
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dotColor }} />
+          <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>
+            Incident #{emergency.id}
           </span>
         </div>
         <span className={`badge ${cfg.badgeClass}`}>
           {cfg.label}
+        </span>
+      </div>
+      
+      <div className="flex items-center justify-between mb-1">
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Type
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>
+          {emergency.type}
         </span>
       </div>
       
@@ -105,6 +109,22 @@ function EmergencyItem({ emergency }: { emergency: Emergency }) {
           fontWeight: 500
         }}>
           {emergency.description}
+        </div>
+      )}
+      
+      {emergency.action_plan && (
+        <div style={{ 
+          marginTop: 8, 
+          padding: '10px',
+          background: 'var(--bg-hover)',
+          borderRadius: 6,
+          borderLeft: '3px solid var(--accent)',
+          fontSize: 11, 
+          color: 'var(--text-primary)',
+          lineHeight: 1.5,
+          fontWeight: 600
+        }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>AI Plan:</span> {emergency.action_plan}
         </div>
       )}
     </div>

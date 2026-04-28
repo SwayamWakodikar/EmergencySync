@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import AmbulanceMarker from './AmbulanceMarker';
 import EmergencyMarker from './EmergencyMarker';
+import HeatmapLayer from './HeatmapLayer';
 import type { Ambulance, Emergency, Assignment } from '../services/api';
 
 interface Props {
@@ -57,33 +58,42 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         // Mark as 'fetching' to prevent duplicate requests
         setRoutesMap((prev) => ({ ...prev, [a.id]: [] }));
 
-        // Use our backend proxy to avoid CORS issues in production
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const url = `${BASE_URL}/route?fromLat=${amb.latitude}&fromLng=${amb.longitude}&toLat=${em.latitude}&toLng=${em.longitude}`;
+        // Fetch directly from OSRM to avoid backend IP rate-limiting which causes straight lines
+        const url = `https://router.project-osrm.org/route/v1/driving/${amb.longitude},${amb.latitude};${em.longitude},${em.latitude}?overview=full&geometries=geojson`;
         fetch(url)
           .then((res) => res.json())
           .then((data) => {
-            if (data.coords && data.coords.length > 0) {
-              setRoutesMap((prev) => ({ ...prev, [a.id]: data.coords }));
+            if (data.routes && data.routes.length > 0) {
+              const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]] as [number, number]);
+              setRoutesMap((prev) => ({ ...prev, [a.id]: coords }));
             }
           })
-          .catch((err) => console.error('Route proxy error:', err));
+          .catch((err) => console.error('OSRM route error:', err));
       }
     });
   }, [activeLines, ambulanceMap, emergencyMap, routesMap]);
+
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <MapContainer
         center={CITY_CENTER}
         zoom={ZOOM}
+        minZoom={11}
+        maxZoom={18}
+        maxBounds={[[18.3, 73.6], [18.8, 74.1]]}
+        maxBoundsViscosity={1.0}
         style={{ width: '100%', height: '100%' }}
-        zoomControl={false} /* we can rely on scroll or add custom zoom controls later */
+        zoomControl={false}
       >
-        {/* Dark map tiles from CartoDB */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          noWrap={true}
         />
+
+        {/* Heatmap layer */}
+        <HeatmapLayer emergencies={emergencies} visible={showHeatmap} />
 
         {/* Ambulance markers */}
         {ambulances.map((amb) => (
@@ -119,42 +129,69 @@ export default function MapView({ ambulances, emergencies, assignments }: Props)
         })}
       </MapContainer>
 
-      {/* Map Overlay Legend */}
-      <div
-        className="glass hidden md:flex"
+      {/* Heatmap toggle button */}
+      <button
+        onClick={() => setShowHeatmap(h => !h)}
         style={{
           position: 'absolute',
-          bottom: 32,
-          left: 24,
+          top: 16,
+          right: 16,
           zIndex: 1000,
-          borderRadius: 'var(--radius)',
-          padding: '12px 16px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          minWidth: 180,
-          boxShadow: 'var(--shadow)',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 13px',
+          borderRadius: '8px',
+          border: `1px solid ${showHeatmap ? '#ef4444' : '#222'}`,
+          background: showHeatmap ? 'rgba(239,68,68,0.15)' : '#111',
+          color: showHeatmap ? '#ef4444' : '#888',
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: 'Inter, sans-serif',
+          cursor: 'pointer',
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          transition: 'all 0.2s ease',
         }}
       >
-        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>
-          Live Map Legend
-        </div>
+        {/* Flame icon */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+        </svg>
+        {showHeatmap ? 'Heatmap On' : 'Heatmap'}
+      </button>
+
+      {/* Compact Legend */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          left: 16,
+          zIndex: 900,
+          borderRadius: 10,
+          padding: '10px 14px',
+          display: 'flex',
+          gap: 16,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          fontSize: 10,
+          fontWeight: 600,
+          color: '#aaa',
+          letterSpacing: '0.02em',
+        }}
+      >
         {[
-          { color: 'var(--accent)', label: 'Ambulance (Free)' },
-          { color: 'var(--warning)', label: 'Ambulance (Assigned)' },
-          { color: 'var(--danger)', label: 'Emergency (Waiting)' },
-          { color: 'var(--warning)', label: 'Emergency (Assigned)' },
-          { color: 'var(--success)', label: 'Emergency (Resolved)' },
+          { color: '#4f46e5', label: 'Medic' },
+          { color: '#3b82f6', label: 'Police' },
+          { color: '#ef4444', label: 'Fire' },
+          { color: '#f59e0b', label: 'Incident' },
         ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 8px ${color}` }} />
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
             {label}
           </div>
         ))}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, marginTop: 4 }}>
-          <div style={{ width: 14, height: 3, background: 'var(--warning)', flexShrink: 0 }} />
-          Dispatch Route
-        </div>
       </div>
     </div>
   );
